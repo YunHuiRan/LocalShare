@@ -11,7 +11,6 @@
 1. `app.ts`
 
 - 启用 gzip 压缩（compression）和 CORS
-- 请求日志中间件（输出中文）
 - 挂载 `routes/videoRoutes.ts`
 
 2. `controllers/videoController.ts`
@@ -67,10 +66,10 @@ npx tsx app.ts
 
 ```bash
 # 首次访问（模拟移动 UA）
-curl -i -H "User-Agent: Mobile-Test" http://localhost:3000/
+curl -i -H "User-Agent: Mobile-Test" http://192.168.1.1:3000/
 
 # 请求 Range（前 1MB）
-curl -i -H "Range: bytes=0-999999" http://localhost:3000/video/示例.mp4
+curl -i -H "Range: bytes=0-999999" http://192.168.1.1:3000/video/示例.mp4
 ```
 
 查看日志：服务端控制台将包含中文日志行，注意首次访问的 `【模板】` / `【目录】` 输出与 `【请求】` 耗时。
@@ -85,13 +84,3 @@ curl -i -H "Range: bytes=0-999999" http://localhost:3000/video/示例.mp4
 - `config.ts`：
   - `PORT`：服务监听端口
   - `VIDEO_FOLDER`：视频所在绝对路径
-
-八、扩展与未来工作
-
-- 改进：分页/懒加载视频列表、预生成缩略图、添加用户认证、支持上传/管理接口
-- 监控：将重要指标（首页生成耗时、目录读取耗时、流请求计数）上报到监控系统
-
-九、常见问题
-
-- 问：手机首次打开白屏是什么原因？
-  答：通常是外部 CSS/字体阻塞或首个 HTML 响应很大/未压缩；先查看 `【模板】` `【目录】` 日志与浏览器网络面板。

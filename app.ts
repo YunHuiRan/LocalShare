@@ -8,7 +8,6 @@ import { PORT, VIDEO_FOLDER } from "./config.ts";
 /**
  * 应用入口
  * - 启用压缩与 CORS
- * - 添加请求日志中间件（输出中文）
  * - 挂载路由
  */
 
@@ -19,7 +18,6 @@ if (!fs.existsSync(VIDEO_FOLDER)) {
 
 const app = express();
 
-// 启用 gzip/deflate 压缩，减少移动网络传输体积
 app.use(compression());
 app.use(cors());
 

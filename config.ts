@@ -4,6 +4,6 @@
 export const PORT: number = 3000;
 
 /**
- * 本地视频目录（请根据实际环境修改）
+ * 本地视频目录
  */
 export const VIDEO_FOLDER: string = "D:\\Download\\Season 1";
