@@ -1,10 +1,7 @@
-/**
- * 根据文件名后缀返回合适的 MIME 类型
- * @param filename 文件名
- * @returns 对应的 MIME 类型字符串
- */
+type MimeMap = Record<string, string>;
+
 class Mime {
-  private videoMimeMap: Record<string, string> = {
+  private videoMimeMap: MimeMap = {
     mp4: "video/mp4",
     mkv: "video/x-matroska",
     avi: "video/x-msvideo",
@@ -18,17 +15,13 @@ class Mime {
     mpg: "video/mpeg",
     mts: "video/MP2T",
     m2ts: "video/MP2T",
-  };
+  } as MimeMap;
 
   public getMimeType(filename: string): string {
-    const fileExtension: string =
-      filename.split(".").pop()?.toLowerCase() || "";
+    const fileExtension = filename.split(".").pop()?.toLowerCase() || "";
     return this.videoMimeMap[fileExtension] || "application/octet-stream";
   }
 
-  /**
-   * 返回受支持的视频文件扩展名（小写，无点）
-   */
   public getSupportedExtensions(): string[] {
     return Object.keys(this.videoMimeMap).map((e) => e.toLowerCase());
   }

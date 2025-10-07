@@ -15,7 +15,7 @@ class TemplateRenderer {
 
   private async loadTemplate(): Promise<string> {
     if (this.cachedTemplate !== null) {
-      logger.info("【模板】 使用缓存模板");
+      logger.debug("【模板】 使用缓存模板");
       return this.cachedTemplate;
     }
 
@@ -25,22 +25,23 @@ class TemplateRenderer {
       path.join(process.cwd(), "dist", "views", "videoList.html"),
     ];
 
-    let lastErr: any;
     for (const p of candidates) {
       try {
-        logger.info(["【模板】 尝试加载模板:", p]);
+        logger.info(`【模板】 尝试加载模板: ${p}`);
         const content = await fs.readFile(p, "utf-8");
         this.cachedTemplate = content;
-        logger.info(["【模板】 模板已加载并缓存:", p]);
+        logger.info(`【模板】 已加载模板并缓存: ${p}`);
         return content;
       } catch (e) {
-        lastErr = e;
-        logger.info(["【模板】 未找到模板:", p]);
+        logger.debug(`【模板】 未在路径找到模板: ${p}`);
       }
     }
 
-    logger.error("【模板】 无法加载模板，尝试的路径:", candidates, lastErr);
-    throw lastErr;
+    const err = new Error(
+      `template not found in candidates: ${candidates.join(",")}`
+    );
+    logger.error("【模板】 加载失败", err);
+    throw err;
   }
 
   public async renderVideoListPage(

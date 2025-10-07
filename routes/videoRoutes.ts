@@ -3,14 +3,16 @@ import { videoController } from "../controllers/videoController";
 
 const router = Router();
 
+// 首页视频与文件夹列表
 router.get("/", videoController.getVideoList.bind(videoController));
 
-// use regex routes to capture nested paths (avoids path-to-regexp parameter syntax issues)
+// 捕获任意嵌套路径用于视频流
 router.get(/^\/video\/(.*)/, videoController.streamVideo.bind(videoController));
 
-// browse folders (supports nested paths)
-router.get(/^\/folder\/(.*)/, videoController.getFolderList.bind(videoController));
-
-// removed /open route: server-side open-folder functionality disabled
+// 浏览文件夹
+router.get(
+  /^\/folder\/(.*)/,
+  videoController.getFolderList.bind(videoController)
+);
 
 export default router;
