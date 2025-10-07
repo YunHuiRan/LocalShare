@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { logger } from "./logger";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,14 +14,14 @@ let cachedTemplate: string | null = null;
  */
 async function loadTemplate(): Promise<string> {
   if (cachedTemplate !== null) {
-    console.log("【模板】 使用缓存模板");
+    logger.info("【模板】 使用缓存模板");
     return cachedTemplate;
   }
 
   const templatePath: string = path.join(__dirname, "../views/videoList.html");
-  console.log(`【模板】 从磁盘加载模板: ${templatePath}`);
+  logger.info(["【模板】 从磁盘加载模板:", templatePath]);
   cachedTemplate = await fs.readFile(templatePath, "utf-8");
-  console.log("【模板】 模板已加载并缓存");
+  logger.info("【模板】 模板已加载并缓存");
   return cachedTemplate;
 }
 

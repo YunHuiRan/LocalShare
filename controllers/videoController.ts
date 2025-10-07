@@ -5,6 +5,7 @@ import path from "path";
 import { VIDEO_FOLDER } from "../config.ts";
 import { getMimeType } from "../utils/mime.ts";
 import { renderVideoListPage } from "../utils/template.ts";
+import { logger } from "../utils/logger";
 
 /**
  * 校验目标路径是否在基路径之内，防止目录穿越
@@ -33,15 +34,15 @@ export async function getVideoList(req: Request, res: Response): Promise<void> {
       html: "",
     };
     if (Date.now() - cache.ts < 5000 && cache.html) {
-      console.log("【缓存】 使用视频列表缓存");
+        logger.info("【缓存】 使用视频列表缓存");
       res.send(cache.html);
-      console.log(`【耗时】 getVideoList ${Date.now() - startTs}ms`);
+        logger.info(`【耗时】 getVideoList ${Date.now() - startTs}ms`);
       return;
     }
 
-    console.log(`【目录】 读取视频目录: ${VIDEO_FOLDER}`);
+      logger.info(`【目录】 读取视频目录: ${VIDEO_FOLDER}`);
     const files: string[] = await fs.readdir(VIDEO_FOLDER);
-    console.log(`【目录】 目录条目数量: ${files.length}`);
+      logger.info(`【目录】 目录条目数量: ${files.length}`);
 
     const videoFilesHtml: string = files
       .filter((file: string) => {
@@ -77,13 +78,13 @@ export async function getVideoList(req: Request, res: Response): Promise<void> {
     );
     (global as any)[cacheKey] = { ts: Date.now(), html };
     res.send(html);
-    console.log(
-      `【耗时】 getVideoList ${Date.now() - startTs}ms（生成），条目: ${
-        videoFilesHtml.length
-      }`
-    );
+      logger.info(
+        `【耗时】 getVideoList ${Date.now() - startTs}ms（生成），条目: ${
+          videoFilesHtml.length
+        }`
+      );
   } catch (err) {
-    console.error("【错误】 getVideoList 读取或渲染失败", err);
+      logger.error("【错误】 getVideoList 读取或渲染失败", err);
     res.status(500).send("无法读取视频目录");
   }
 }
@@ -99,7 +100,7 @@ export async function streamVideo(req: Request, res: Response): Promise<void> {
     const filename: string = decodeURIComponent(req.params.filename);
     const videoPath: string = path.join(VIDEO_FOLDER, filename);
 
-    console.log(`【流】 请求文件: ${filename}`);
+      logger.info(`【流】 请求文件: ${filename}`);
 
     if (!isPathSafe(VIDEO_FOLDER, videoPath)) {
       res.status(403).send("禁止访问");
@@ -108,7 +109,7 @@ export async function streamVideo(req: Request, res: Response): Promise<void> {
 
     await fs.access(videoPath);
     const stat = await fs.stat(videoPath);
-    console.log(`【流】 文件存在，大小: ${stat.size} 字节`);
+      logger.info(`【流】 文件存在，大小: ${stat.size} 字节`);
     const fileSize: number = stat.size;
     const range = req.headers.range;
 
@@ -116,7 +117,7 @@ export async function streamVideo(req: Request, res: Response): Promise<void> {
       const parts = range.replace(/bytes=/, "").split("-");
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
-      console.log(`【流】 Range 请求：start=${start}, end=${end}`);
+        logger.info(`【流】 Range 请求：start=${start}, end=${end}`);
       const chunkSize: number = end - start + 1;
 
       const file = createReadStream(videoPath, { start, end });
@@ -130,8 +131,8 @@ export async function streamVideo(req: Request, res: Response): Promise<void> {
 
       res.writeHead(206, head);
       file.pipe(res);
-      file.once("open", () => console.log("【流】 分段流已打开"));
-      file.once("close", () => console.log("【流】 分段流已关闭"));
+        file.once("open", () => logger.info("【流】 分段流已打开"));
+        file.once("close", () => logger.info("【流】 分段流已关闭"));
     } else {
       const head = {
         "Content-Length": fileSize,
@@ -141,11 +142,11 @@ export async function streamVideo(req: Request, res: Response): Promise<void> {
       res.writeHead(200, head);
       const full = createReadStream(videoPath);
       full.pipe(res);
-      full.once("open", () => console.log("【流】 全量流已打开"));
-      full.once("close", () => console.log("【流】 全量流已关闭"));
+        full.once("open", () => logger.info("【流】 全量流已打开"));
+        full.once("close", () => logger.info("【流】 全量流已关闭"));
     }
   } catch (err) {
-    console.error("【错误】 streamVideo 流式传输失败", err);
+      logger.error("【错误】 streamVideo 流式传输失败", err);
     res.status(404).send("视频文件未找到");
   }
 }
