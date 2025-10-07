@@ -1,44 +1,60 @@
 import fs from "fs/promises";
 import path from "path";
-import { fileURLToPath } from "url";
 import { logger } from "./logger";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const baseDir = typeof __dirname !== "undefined" ? __dirname : process.cwd();
 
-let cachedTemplate: string | null = null;
+class TemplateRenderer {
+  private templatePath: string;
+  private cachedTemplate: string | null = null;
 
-/**
- * 从文件系统加载模板，首次加载后缓存至内存
- * 以减少每次请求的磁盘 I/O
- */
-async function loadTemplate(): Promise<string> {
-  if (cachedTemplate !== null) {
-    logger.info("【模板】 使用缓存模板");
-    return cachedTemplate;
+  constructor(templatePath?: string) {
+    this.templatePath =
+      templatePath || path.join(baseDir, "../views/videoList.html");
   }
 
-  const templatePath: string = path.join(__dirname, "../views/videoList.html");
-  logger.info(["【模板】 从磁盘加载模板:", templatePath]);
-  cachedTemplate = await fs.readFile(templatePath, "utf-8");
-  logger.info("【模板】 模板已加载并缓存");
-  return cachedTemplate;
+  private async loadTemplate(): Promise<string> {
+    if (this.cachedTemplate !== null) {
+      logger.info("【模板】 使用缓存模板");
+      return this.cachedTemplate;
+    }
+
+    const candidates = [
+      path.join(__dirname, "../views/videoList.html"),
+      path.join(process.cwd(), "views", "videoList.html"),
+      path.join(process.cwd(), "dist", "views", "videoList.html"),
+    ];
+
+    let lastErr: any;
+    for (const p of candidates) {
+      try {
+        logger.info(["【模板】 尝试加载模板:", p]);
+        const content = await fs.readFile(p, "utf-8");
+        this.cachedTemplate = content;
+        logger.info(["【模板】 模板已加载并缓存:", p]);
+        return content;
+      } catch (e) {
+        lastErr = e;
+        logger.info(["【模板】 未找到模板:", p]);
+      }
+    }
+
+    logger.error("【模板】 无法加载模板，尝试的路径:", candidates, lastErr);
+    throw lastErr;
+  }
+
+  public async renderVideoListPage(
+    videoItems: string,
+    folderPath: string
+  ): Promise<string> {
+    let html: string = await this.loadTemplate();
+
+    html = html.replace("{{videoItems}}", videoItems);
+    html = html.replace("{{folderPath}}", folderPath);
+
+    return html;
+  }
 }
 
-/**
- * 渲染视频列表页面 HTML
- * @param videoItems 已生成的 HTML 列表项字符串
- * @param folderPath 当前视频目录路径（用于显示）
- * @returns 渲染后的完整 HTML 字符串
- */
-export async function renderVideoListPage(
-  videoItems: string,
-  folderPath: string
-): Promise<string> {
-  let html: string = await loadTemplate();
-
-  html = html.replace("{{videoItems}}", videoItems);
-  html = html.replace("{{folderPath}}", folderPath);
-
-  return html;
-}
+export const templateRenderer = new TemplateRenderer();
+export default TemplateRenderer;

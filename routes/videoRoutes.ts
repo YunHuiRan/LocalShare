@@ -1,10 +1,13 @@
 import { Router } from "express";
-import { getVideoList, streamVideo } from "../controllers/videoController.ts";
+import { videoController } from "../controllers/videoController";
 
 const router = Router();
 
-router.get("/", getVideoList);
+router.get("/", videoController.getVideoList.bind(videoController));
 
-router.get("/video/:filename", streamVideo);
+router.get(
+  "/video/:filename",
+  videoController.streamVideo.bind(videoController)
+);
 
 export default router;

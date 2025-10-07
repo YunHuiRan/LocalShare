@@ -2,8 +2,8 @@ import express from "express";
 import cors from "cors";
 import compression from "compression";
 import fs from "fs";
-import videoRoutes from "./routes/videoRoutes.ts";
-import { PORT, VIDEO_FOLDER } from "./config.ts";
+import videoRoutes from "./routes/videoRoutes";
+import { PORT, VIDEO_FOLDER } from "./config";
 import { logger } from "./utils/logger";
 
 /**
@@ -12,7 +12,6 @@ import { logger } from "./utils/logger";
  * - 挂载路由
  */
 
-// 确保视频目录存在
 if (!fs.existsSync(VIDEO_FOLDER)) {
   fs.mkdirSync(VIDEO_FOLDER);
 }

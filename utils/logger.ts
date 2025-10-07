@@ -28,5 +28,4 @@ export class Logger {
   }
 }
 
-// 默认导出一个全局 logger 实例，方便直接使用
 export const logger = new Logger();

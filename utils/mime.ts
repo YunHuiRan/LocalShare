@@ -3,10 +3,8 @@
  * @param filename 文件名
  * @returns 对应的 MIME 类型字符串
  */
-export function getMimeType(filename: string): string {
-  const fileExtension: string = filename.split(".").pop()?.toLowerCase() || "";
-
-  const videoMimeMap: Record<string, string> = {
+class Mime {
+  private videoMimeMap: Record<string, string> = {
     mp4: "video/mp4",
     mkv: "video/x-matroska",
     avi: "video/x-msvideo",
@@ -22,5 +20,22 @@ export function getMimeType(filename: string): string {
     m2ts: "video/MP2T",
   };
 
-  return videoMimeMap[fileExtension] || "application/octet-stream";
+  public getMimeType(filename: string): string {
+    const fileExtension: string =
+      filename.split(".").pop()?.toLowerCase() || "";
+    return this.videoMimeMap[fileExtension] || "application/octet-stream";
+  }
+
+  /**
+   * 返回受支持的视频文件扩展名（小写，无点）
+   */
+  public getSupportedExtensions(): string[] {
+    return Object.keys(this.videoMimeMap).map((e) => e.toLowerCase());
+  }
+}
+
+export const mime = new Mime();
+
+export function getMimeType(filename: string): string {
+  return mime.getMimeType(filename);
 }
