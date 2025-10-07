@@ -5,6 +5,7 @@ import path from "path";
 import { VIDEO_FOLDER } from "../config";
 import { mime, getMimeType } from "../utils/mime";
 import { templateRenderer } from "../utils/template";
+import { spawn } from "child_process";
 import { logger } from "../utils/logger";
 
 export class VideoController {
@@ -36,8 +37,29 @@ export class VideoController {
       }
 
       logger.info(`【目录】 读取视频目录: ${this.videoFolder}`);
-      const files: string[] = await fs.readdir(this.videoFolder);
+  const dirents = await fs.readdir(this.videoFolder, { withFileTypes: true });
+  const files: string[] = dirents.map((d) => d.name);
       logger.info(`【目录】 目录条目数量: ${files.length}`);
+
+      // folders first
+      const folderItemsHtml: string = dirents
+        .filter((d) => d.isDirectory())
+        .map((d) => {
+          const name = d.name;
+          const url = `/folder/${encodeURIComponent(name)}`;
+          return `
+          <a href="${url}" class="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4">
+            <div class="flex items-center gap-3">
+              <i class="fa fa-folder text-3xl text-yellow-500"></i>
+              <div class="truncate">
+                <div class="font-medium">${name}</div>
+                <div class="text-xs text-gray-500 truncate">文件夹</div>
+              </div>
+            </div>
+          </a>
+        `;
+        })
+        .join("");
 
       const videoFilesHtml: string = files
         .filter((file: string) => {
@@ -67,9 +89,14 @@ export class VideoController {
         })
         .join("");
 
+      // build breadcrumb from folderPath (show tail)
+      const breadcrumb = `<a href="/" class="text-blue-600 hover:underline">Home</a> <span class="text-gray-400">/</span> <span class="text-gray-600">${path.basename(this.videoFolder)}</span>`;
+
       const html: string = await templateRenderer.renderVideoListPage(
         videoFilesHtml,
-        this.videoFolder
+        this.videoFolder,
+        folderItemsHtml,
+        breadcrumb
       );
       (global as any)[cacheKey] = { ts: Date.now(), html };
       res.send(html);
@@ -86,7 +113,9 @@ export class VideoController {
 
   public async streamVideo(req: Request, res: Response): Promise<void> {
     try {
-      const filename: string = decodeURIComponent(req.params.filename);
+      // support wildcard route /video/* -> req.params[0]
+  const rawFilename: any = (req.params as any).filename || (req.params as any)[0];
+  const filename: string = decodeURIComponent(rawFilename || "");
       const videoPath: string = path.join(this.videoFolder, filename);
 
       logger.info(`【流】 请求文件: ${filename}`);
@@ -137,6 +166,125 @@ export class VideoController {
     } catch (err) {
       logger.error("【错误】 streamVideo 流式传输失败", err);
       res.status(404).send("视频文件未找到");
+    }
+  }
+
+  public async getFolderList(req: Request, res: Response): Promise<void> {
+    const startTs = Date.now();
+    try {
+  const rawPath: any = (req.params as any).path || (req.params as any)[0] || "";
+  const subPath = decodeURIComponent(rawPath || "");
+      const targetPath = path.join(this.videoFolder, subPath);
+
+      if (!VideoController.isPathSafe(this.videoFolder, targetPath)) {
+        res.status(403).send("禁止访问");
+        return;
+      }
+
+      logger.info(`【目录】 读取子目录: ${targetPath}`);
+      const dirents = await fs.readdir(targetPath, { withFileTypes: true });
+
+      const folderItemsHtml = dirents
+        .filter((d) => d.isDirectory())
+        .map((d) => {
+          const name = d.name;
+          const next = path.posix.join(subPath, name).replace(/\\/g, "/");
+          const url = `/folder/${encodeURIComponent(next)}`;
+          return `
+          <a href="${url}" class="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4">
+            <div class="flex items-center gap-3">
+              <i class="fa fa-folder text-3xl text-yellow-500"></i>
+              <div class="truncate">
+                <div class="font-medium">${name}</div>
+                <div class="text-xs text-gray-500 truncate">文件夹</div>
+              </div>
+            </div>
+          </a>
+        `;
+        })
+        .join("");
+
+      const videoFilesHtml = dirents
+        .filter((d) => d.isFile())
+        .map((d) => d.name)
+        .filter((file) => {
+          const ext = file.toLowerCase();
+          return ext.endsWith(".mp4") || ext.endsWith(".mkv") || ext.endsWith(".avi") || ext.endsWith(".mov");
+        })
+        .map((file) => {
+          const rel = path.posix.join(subPath, file).replace(/\\/g, "/");
+          const url = `/video/${encodeURIComponent(rel)}`;
+          const icon = file.toLowerCase().endsWith(".mp4") ? "fa-file-video-o" : file.toLowerCase().endsWith(".mkv") ? "fa-film" : "fa-play-circle";
+          return `
+            <a href="${url}" class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+              <div class="p-4">
+                <i class="fa ${icon} text-3xl text-blue-500 mb-2"></i>
+                <h3 class="font-medium truncate">${file}</h3>
+              </div>
+            </a>
+          `;
+        })
+        .join("");
+
+      // build breadcrumb
+      const parts = subPath ? subPath.split(/[\\/]+/) : [];
+      let breadcrumb = `<a href="/" class="text-blue-600 hover:underline">Home</a>`;
+      let acc = "";
+      for (let i = 0; i < parts.length; i++) {
+        acc = acc ? path.posix.join(acc, parts[i]) : parts[i];
+        breadcrumb += ` <span class="text-gray-400">/</span> <a href="/folder/${encodeURIComponent(acc)}" class="text-blue-600 hover:underline">${parts[i]}</a>`;
+      }
+
+      const html: string = await templateRenderer.renderVideoListPage(
+        videoFilesHtml,
+        targetPath,
+        folderItemsHtml,
+        breadcrumb
+      );
+
+      res.send(html);
+      logger.info(`【耗时】 getFolderList ${Date.now() - startTs}ms`);
+    } catch (err) {
+      logger.error("【错误】 getFolderList 失败", err);
+      res.status(500).send("无法读取目录");
+    }
+  }
+
+  public async openFolder(req: Request, res: Response): Promise<void> {
+    try {
+      const raw = (req.query.path as string) || "";
+      const subPath = decodeURIComponent(raw || "");
+      const targetPath = path.join(this.videoFolder, subPath);
+
+      if (!VideoController.isPathSafe(this.videoFolder, targetPath)) {
+        res.status(403).json({ ok: false, message: "禁止访问" });
+        return;
+      }
+
+      logger.info(`【打开】 尝试在服务器上打开: ${targetPath}`);
+
+      // choose command based on platform
+      const platform = process.platform;
+      let cmd: string;
+      let args: string[] = [];
+      if (platform === "win32") {
+        cmd = "explorer";
+        args = [targetPath];
+      } else if (platform === "darwin") {
+        cmd = "open";
+        args = [targetPath];
+      } else {
+        cmd = "xdg-open";
+        args = [targetPath];
+      }
+
+      const p = spawn(cmd, args, { detached: true, stdio: "ignore" });
+      p.unref();
+
+      res.json({ ok: true });
+    } catch (err) {
+      logger.error("【错误】 openFolder 失败", err);
+      res.status(500).json({ ok: false, message: "无法打开文件夹" });
     }
   }
 }

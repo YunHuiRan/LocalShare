@@ -45,12 +45,16 @@ class TemplateRenderer {
 
   public async renderVideoListPage(
     videoItems: string,
-    folderPath: string
+    folderPath: string,
+    folderItems: string,
+    breadcrumb: string
   ): Promise<string> {
     let html: string = await this.loadTemplate();
 
     html = html.replace("{{videoItems}}", videoItems);
     html = html.replace("{{folderPath}}", folderPath);
+    html = html.replace("{{folderItems}}", folderItems);
+    html = html.replace("{{breadcrumb}}", breadcrumb);
 
     return html;
   }
