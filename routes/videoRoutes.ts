@@ -11,6 +11,6 @@ router.get(/^\/video\/(.*)/, videoController.streamVideo.bind(videoController));
 // browse folders (supports nested paths)
 router.get(/^\/folder\/(.*)/, videoController.getFolderList.bind(videoController));
 
-router.get("/open", videoController.openFolder.bind(videoController));
+// removed /open route: server-side open-folder functionality disabled
 
 export default router;

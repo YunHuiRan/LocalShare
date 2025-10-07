@@ -48,33 +48,4 @@
     </div>
     <script>
       // Add open buttons to folder items
-      (function(){
-        const container = document.querySelectorAll('aside .space-y-2 a');
-        container.forEach(a => {
-          try {
-            const href = a.getAttribute('href');
-            if (!href) return;
-            const span = document.createElement('div');
-            span.className = 'mt-2';
-            const btn = document.createElement('button');
-            btn.textContent = '打开';
-            btn.className = 'text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600';
-            btn.addEventListener('click', function(e){
-              e.preventDefault();
-              const path = href.replace(/^\/folder\//, '');
-              fetch('/open?path=' + encodeURIComponent(path)).then(r => r.json()).then(j => {
-                if (j && j.ok) {
-                  alert('已在服务器上打开文件夹');
-                } else {
-                  alert('打开失败');
-                }
-              }).catch(()=>alert('打开失败'));
-            });
-            span.appendChild(btn);
-            a.parentNode.appendChild(span);
-          } catch(e){}
-        });
-      })();
-    </script>
-  </body>
-</html>
+      <!-- server-side open-folder feature removed: no client-side open buttons -->

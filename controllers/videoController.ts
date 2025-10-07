@@ -172,8 +172,8 @@ export class VideoController {
   public async getFolderList(req: Request, res: Response): Promise<void> {
     const startTs = Date.now();
     try {
-  const rawPath: any = (req.params as any).path || (req.params as any)[0] || "";
-  const subPath = decodeURIComponent(rawPath || "");
+      const rawPath: any = (req.params as any).path || (req.params as any)[0] || "";
+      const subPath = decodeURIComponent(rawPath || "");
       const targetPath = path.join(this.videoFolder, subPath);
 
       if (!VideoController.isPathSafe(this.videoFolder, targetPath)) {
@@ -247,44 +247,6 @@ export class VideoController {
     } catch (err) {
       logger.error("【错误】 getFolderList 失败", err);
       res.status(500).send("无法读取目录");
-    }
-  }
-
-  public async openFolder(req: Request, res: Response): Promise<void> {
-    try {
-      const raw = (req.query.path as string) || "";
-      const subPath = decodeURIComponent(raw || "");
-      const targetPath = path.join(this.videoFolder, subPath);
-
-      if (!VideoController.isPathSafe(this.videoFolder, targetPath)) {
-        res.status(403).json({ ok: false, message: "禁止访问" });
-        return;
-      }
-
-      logger.info(`【打开】 尝试在服务器上打开: ${targetPath}`);
-
-      // choose command based on platform
-      const platform = process.platform;
-      let cmd: string;
-      let args: string[] = [];
-      if (platform === "win32") {
-        cmd = "explorer";
-        args = [targetPath];
-      } else if (platform === "darwin") {
-        cmd = "open";
-        args = [targetPath];
-      } else {
-        cmd = "xdg-open";
-        args = [targetPath];
-      }
-
-      const p = spawn(cmd, args, { detached: true, stdio: "ignore" });
-      p.unref();
-
-      res.json({ ok: true });
-    } catch (err) {
-      logger.error("【错误】 openFolder 失败", err);
-      res.status(500).json({ ok: false, message: "无法打开文件夹" });
     }
   }
 }
