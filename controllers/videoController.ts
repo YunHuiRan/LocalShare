@@ -8,18 +8,39 @@ import { templateRenderer } from "../utils/template";
 import { logger } from "../utils/logger";
 
 export class VideoController {
+  /**
+   * Base folder where videos are stored
+   * @type {string}
+   */
   private videoFolder: string;
 
+  /**
+   * Create a VideoController
+   * @param {string} [videoFolder=VIDEO_FOLDER] - the base folder for videos
+   */
   constructor(videoFolder: string = VIDEO_FOLDER) {
     this.videoFolder = videoFolder;
   }
 
+  /**
+   * Ensure the target path is inside the base folder (prevent directory traversal)
+   * @param {string} base - base folder
+   * @param {string} target - target path to validate
+   * @returns {boolean}
+   */
   static isPathSafe(base: string, target: string): boolean {
     const resolvedBase = path.resolve(base);
     const resolvedTarget = path.resolve(target);
     return resolvedTarget.startsWith(resolvedBase);
   }
 
+  /**
+   * Render index page which lists videos and subfolders in the configured video folder.
+   * Caches HTML for a short period to reduce filesystem reads.
+   * @param {Request} _req
+   * @param {Response} res
+   * @returns {Promise<void>}
+   */
   public async getVideoList(_req: Request, res: Response): Promise<void> {
     logger.debug("【getVideoList】 入口");
     const cacheKey = "__videoListCache";
@@ -107,6 +128,12 @@ export class VideoController {
     }
   }
 
+  /**
+   * Stream a video file. Respects Range header for partial content.
+   * @param {Request} req
+   * @param {Response} res
+   * @returns {Promise<void>}
+   */
   public async streamVideo(req: Request, res: Response): Promise<void> {
     logger.debug("【streamVideo】 入口");
     try {
@@ -169,6 +196,12 @@ export class VideoController {
     }
   }
 
+  /**
+   * List contents of a subfolder inside the video folder.
+   * @param {Request} req
+   * @param {Response} res
+   * @returns {Promise<void>}
+   */
   public async getFolderList(req: Request, res: Response): Promise<void> {
     logger.debug("【getFolderList】 入口");
     try {
@@ -258,4 +291,8 @@ export class VideoController {
   }
 }
 
+/**
+ * Singleton controller instance
+ * @type {VideoController}
+ */
 export const videoController = new VideoController();

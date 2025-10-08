@@ -5,14 +5,30 @@ import { logger } from "./logger";
 const baseDir = typeof __dirname !== "undefined" ? __dirname : process.cwd();
 
 class TemplateRenderer {
+  /**
+   * Path to template file
+   * @type {string}
+   */
   private templatePath: string;
+  /**
+   * Cached template content
+   * @type {string | null}
+   */
   private cachedTemplate: string | null = null;
 
+  /**
+   * Create a TemplateRenderer
+   * @param {string} [templatePath] - optional custom template path
+   */
   constructor(templatePath?: string) {
     this.templatePath =
       templatePath || path.join(baseDir, "../views/videoList.html");
   }
 
+  /**
+   * Load the template from candidate locations and cache it.
+   * @returns {Promise<string>} resolved template content
+   */
   private async loadTemplate(): Promise<string> {
     if (this.cachedTemplate !== null) {
       logger.debug("【模板】 使用缓存模板");
@@ -44,6 +60,14 @@ class TemplateRenderer {
     throw err;
   }
 
+  /**
+   * Render the video list page by replacing placeholders in the template.
+   * @param {string} videoItems - HTML string for video items
+   * @param {string} folderPath - current folder path (displayed in template)
+   * @param {string} folderItems - HTML string for folder items
+   * @param {string} breadcrumb - breadcrumb HTML
+   * @returns {Promise<string>} rendered HTML
+   */
   public async renderVideoListPage(
     videoItems: string,
     folderPath: string,
@@ -61,5 +85,13 @@ class TemplateRenderer {
   }
 }
 
+/**
+ * Shared template renderer instance
+ * @type {TemplateRenderer}
+ */
 export const templateRenderer = new TemplateRenderer();
+
+/**
+ * TemplateRenderer constructor (default export)
+ */
 export default TemplateRenderer;

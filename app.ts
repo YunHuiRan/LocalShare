@@ -10,11 +10,21 @@ if (!fs.existsSync(VIDEO_FOLDER)) {
   fs.mkdirSync(VIDEO_FOLDER);
 }
 
+/**
+ * Express application instance
+ * @type {import('express').Application}
+ */
 const app = express();
 
 app.use(compression());
 app.use(cors());
 
+/**
+ * Simple request logging middleware.
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
+ */
 app.use((req, res, next) => {
   const start: number = Date.now();
   logger.debug(`【请求】 开始 ${req.method} ${req.originalUrl}`);
@@ -37,6 +47,12 @@ app.use((req, res, next) => {
 
 app.use("/", videoRoutes);
 
+/**
+ * Try to listen on a port, optionally retrying when the port is in use.
+ * @param {number} port - starting port to try
+ * @param {number} [attemptsLeft=3] - remaining retry attempts
+ * @returns {import('http').Server}
+ */
 function tryListen(port: number, attemptsLeft = 3) {
   logger.info(`尝试监听端口 ${port}（剩余尝试 ${attemptsLeft}）`);
   const startAttempt = Date.now();
@@ -72,7 +88,8 @@ function tryListen(port: number, attemptsLeft = 3) {
   return server;
 }
 
-const server = tryListen(PORT, 10);
+/** @type {import('http').Server} */
+const server: import("http").Server = tryListen(PORT, 10);
 
 server.on("error", (err: any) => {
   logger.error([

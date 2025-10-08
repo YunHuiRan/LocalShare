@@ -1,7 +1,10 @@
-type MimeMap = Record<string, string>;
+/**
+ * Map of file extension to mime type
+ */
 
 class Mime {
-  private videoMimeMap: MimeMap = {
+  /** @type {Record<string, string>} */
+  private videoMimeMap: Record<string, string> = {
     mp4: "video/mp4",
     mkv: "video/x-matroska",
     avi: "video/x-msvideo",
@@ -15,13 +18,22 @@ class Mime {
     mpg: "video/mpeg",
     mts: "video/MP2T",
     m2ts: "video/MP2T",
-  } as MimeMap;
+  };
 
+  /**
+   * Get mime type for a filename
+   * @param {string} filename
+   * @returns {string}
+   */
   public getMimeType(filename: string): string {
-    const fileExtension = filename.split(".").pop()?.toLowerCase() || "";
-    return this.videoMimeMap[fileExtension] || "application/octet-stream";
+    const fileExtension = filename.split('.').pop()?.toLowerCase() || '';
+    return this.videoMimeMap[fileExtension] || 'application/octet-stream';
   }
 
+  /**
+   * Get supported extensions
+   * @returns {string[]}
+   */
   public getSupportedExtensions(): string[] {
     return Object.keys(this.videoMimeMap).map((e) => e.toLowerCase());
   }
@@ -29,6 +41,11 @@ class Mime {
 
 export const mime = new Mime();
 
+/**
+ * Convenience wrapper
+ * @param {string} filename
+ * @returns {string}
+ */
 export function getMimeType(filename: string): string {
   return mime.getMimeType(filename);
 }
