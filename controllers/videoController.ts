@@ -3,7 +3,7 @@ import fs from "fs/promises";
 import { createReadStream } from "fs";
 import path from "path";
 import { VIDEO_FOLDER } from "../config";
-import { getMimeType } from "../utils/mime";
+import { getMimeType, mime } from "../utils/mime";
 import { templateRenderer } from "../utils/template";
 import { logger } from "../utils/logger";
 
@@ -59,15 +59,12 @@ export class VideoController {
         })
         .join("");
 
+      const supportedExts = mime.getSupportedExtensions();
+
       const videoFilesHtml = names
         .filter((file) => {
-          const ext = file.toLowerCase();
-          return (
-            ext.endsWith(".mp4") ||
-            ext.endsWith(".mkv") ||
-            ext.endsWith(".avi") ||
-            ext.endsWith(".mov")
-          );
+          const fileExt = path.extname(file).toLowerCase().replace(/^\./, "");
+          return supportedExts.includes(fileExt);
         })
         .map((file) => {
           const url = `/video/${encodeURIComponent(file)}`;
@@ -213,13 +210,8 @@ export class VideoController {
         .filter((d) => d.isFile())
         .map((d) => d.name)
         .filter((file) => {
-          const ext = file.toLowerCase();
-          return (
-            ext.endsWith(".mp4") ||
-            ext.endsWith(".mkv") ||
-            ext.endsWith(".avi") ||
-            ext.endsWith(".mov")
-          );
+          const fileExt = path.extname(file).toLowerCase().replace(/^\./, "");
+          return mime.getSupportedExtensions().includes(fileExt);
         })
         .map((file) => {
           const rel = path.posix.join(subPath, file).replace(/\\/g, "/");

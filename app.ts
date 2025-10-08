@@ -6,12 +6,6 @@ import videoRoutes from "./routes/videoRoutes";
 import { PORT, VIDEO_FOLDER } from "./config";
 import { logger } from "./utils/logger";
 
-/**
- * 应用入口
- * - 启用压缩与 CORS
- * - 挂载路由
- */
-
 if (!fs.existsSync(VIDEO_FOLDER)) {
   fs.mkdirSync(VIDEO_FOLDER);
 }
@@ -21,10 +15,6 @@ const app = express();
 app.use(compression());
 app.use(cors());
 
-/**
- * 请求日志中间件
- * 记录：HTTP 方法、URL、响应状态、耗时(ms)、User-Agent
- */
 app.use((req, res, next) => {
   const start: number = Date.now();
   logger.debug(`【请求】 开始 ${req.method} ${req.originalUrl}`);
