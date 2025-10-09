@@ -70,44 +70,7 @@ curl -v http://localhost:3000/folder/subfolder
 
 ---
 
-## 数据形状与错误模式 / Data shapes & error modes
-
-- HTML 输出没有结构化 JSON API；页面上的视频与文件夹项是直接渲染的 HTML 片段。
-- 错误处理：
-  - 500 系列：文件系统读取失败（如权限问题或磁盘错误）
-  - 404：请求的视频文件未找到或读取失败
-  - 403：路径越界检测触发
-
-在可能的边界场景下，请考虑：
-
-- 空目录：页面将渲染无视频项与无文件夹项的空视图
-- 超大文件：Range 支持能减小单次传输大小，但仍需关注服务器带宽与并发
-- 非支持格式：若文件后缀不在 `utils/mime.ts` 列表中，会使用 `application/octet-stream` 作为 Content-Type
-
----
-
-## 常见问题 / FAQ
-
-Q: 如何修改视频根目录？
-A: 编辑 `config.ts` 中的 `VIDEO_FOLDER`，或把它改为从环境变量读取（推荐）。
-
-Q: 如何在局域网内其他设备访问？
-A: 确保服务器机器允许入站连接（防火墙放行），并使用机器 IP 和端口例如 `http://192.168.1.100:3000/`。若需要公网访问，请使用反向代理或隧道服务。
-
-Q: 为什么某些视频无法播放？
-A: 可能是浏览器不支持对应编码，或文件损坏，或 Content-Type 不正确。可在 `utils/mime.ts` 中确认扩展名是否已映射，或将文件转码为更通用的容器/编码（例如 MP4 + H.264/AAC）。
-
----
-
-## 部署建议 / Deployment recommendations
-
-- 通过 PM2 或 systemd 运行生产进程
-- 使用 Nginx / Caddy 做反向代理、TLS 终止和访问控制
-- 将 `VIDEO_FOLDER` 指向一个只读路径或受限用户以减少风险
-
----
-
-## 开发者提示 / Developer tips
+## 提示 / Tips
 
 - 若要添加 API 返回 JSON（例如文件列表 JSON），可以在 `controllers/videoController.ts` 中增加一个 query 参数或单独路由来返回结构化数据。
 - 如果需要认证，建议在 `app.ts` 的中间件链上添加认证中间件，并在模板中显示登录/登出链接。

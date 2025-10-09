@@ -21,7 +21,7 @@ LocalShare is a minimal local video sharing and streaming service. It exposes a 
 
 ## 快速开始 / Quick start
 
-先确保已安装 Node.js 与 npm/yarn。项目使用 TypeScript，仓库内已包含 dev scripts。
+先确保已安装 Node.js 与 npm/yarn。项目使用 TypeScript。
 
 安装依赖:
 
@@ -44,7 +44,7 @@ npm run start
 
 脚本:
 
-- `dev` — 使用 `npx tsx app.ts` 直接运行 TypeScript（适合本地开发）
+- `dev` — 使用 `npx tsx app.ts` 直接运行 TypeScript
 - `build` — `tsc`，把 TypeScript 编译到 `dist/`
 - `start` — `node dist/app.js`，启动已编译的应用
 
