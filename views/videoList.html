@@ -5,6 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title></title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Element Plus inspired palette (light/dark) and mapping to commonly used utility classes */
+      :root{
+        --el-color-primary: #409EFF; /* primary */
+        --el-color-success: #67C23A;
+        --el-color-warning: #E6A23C;
+        --el-color-danger: #F56C6C;
+        --el-color-info: #909399;
+
+        --el-surface: #ffffff;
+        --el-bg: #f7fafc;
+        --el-text: #111827;
+        --el-muted: #6b7280;
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --el-surface: #0f1724;
+          --el-bg: #071024;
+          --el-text: #e5e7eb;
+          --el-muted: #9ca3af;
+        }
+      }
+
+      /* map a few frequently used Tailwind utility classes to Element Plus colors */
+      .bg-blue-600 { background-color: var(--el-color-primary) !important; }
+      .text-blue-600 { color: var(--el-color-primary) !important; }
+      a { color: var(--el-color-primary); }
+
+      .bg-white { background-color: var(--el-surface) !important; }
+      .bg-gray-900, .bg-gray-800, .bg-gray-700, .bg-black { background-color: var(--el-bg) !important; }
+
+      .text-white { color: var(--el-text) !important; }
+      .text-gray-800 { color: var(--el-text) !important; }
+      .text-gray-700, .text-gray-600, .text-gray-500 { color: var(--el-muted) !important; }
+      .text-gray-300, .text-gray-400 { color: var(--el-muted) !important; }
+
+      /* small helper for playlist highlight compatibility */
+      .el-highlight { background-color: var(--el-color-primary) !important; color: #fff !important; }
+    </style>
     <link
       href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"
       rel="stylesheet"
@@ -29,21 +68,8 @@
         {{breadcrumb}}
       </nav>
 
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <aside class="lg:col-span-1">
-          <div class="bg-white rounded-lg shadow-sm p-4">
-            <h3 class="font-medium text-gray-700 mb-3">文件夹</h3>
-            <div class="space-y-2">
-              {{folderItems}}
-            </div>
-          </div>
-        </aside>
-
-        <main class="lg:col-span-3">
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {{videoItems}}
           </div>
-        </main>
-      </div>
     </div>
     <script>

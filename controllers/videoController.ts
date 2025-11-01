@@ -149,8 +149,11 @@ export class VideoController {
         .map((file) => {
           const fileExt = path.extname(file).toLowerCase().replace(/^\./, "");
           const isImage = mime.isImageExtension(fileExt);
+          const isAudio = mime.isAudioExtension(fileExt);
           const url = isImage
             ? `/comic/${encodeURIComponent(file)}`
+            : isAudio
+            ? `/audio/${encodeURIComponent(file)}`
             : `/video/${encodeURIComponent(file)}`;
           if (isImage) {
             const thumb = `/video/${encodeURIComponent(file)}`;
@@ -165,7 +168,9 @@ export class VideoController {
           </a>
         `;
           } else {
-            const icon = file.toLowerCase().endsWith(".mp4")
+            const icon = isAudio
+              ? "fa-music"
+              : file.toLowerCase().endsWith(".mp4")
               ? "fa-file-video-o"
               : file.toLowerCase().endsWith(".mkv")
               ? "fa-film"
@@ -419,8 +424,11 @@ export class VideoController {
           const rel = path.posix.join(subPath, file).replace(/\\/g, "/");
           const fileExt = path.extname(file).toLowerCase().replace(/^\./, "");
           const isImage = mime.isImageExtension(fileExt);
+          const isAudio = mime.isAudioExtension(fileExt);
           const url = isImage
             ? `/comic/${encodeURIComponent(rel)}`
+            : isAudio
+            ? `/audio/${encodeURIComponent(rel)}`
             : `/video/${encodeURIComponent(rel)}`;
           if (isImage) {
             const thumb = `/video/${encodeURIComponent(rel)}`;
@@ -435,7 +443,9 @@ export class VideoController {
             </a>
           `;
           } else {
-            const icon = file.toLowerCase().endsWith(".mp4")
+            const icon = isAudio
+              ? "fa-music"
+              : file.toLowerCase().endsWith(".mp4")
               ? "fa-file-video-o"
               : file.toLowerCase().endsWith(".mkv")
               ? "fa-film"

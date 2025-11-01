@@ -5,76 +5,156 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{title}}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #0b1220 !important;
+          color: #e5e7eb !important;
+        }
+        .bg-gray-900,
+        .bg-gray-800 {
+          background-color: #071024 !important;
+        }
+        .bg-gray-700 {
+          background-color: #0b1220 !important;
+        }
+        .text-gray-400,
+        .text-gray-300 {
+          color: #9ca3af !important;
+        }
+      }
+      @media (prefers-color-scheme: light) {
+        body {
+          background-color: #f7fafc !important;
+          color: #111827 !important;
+        }
+        .bg-gray-900,
+        .bg-gray-800,
+        .bg-gray-700 {
+          background-color: #fff !important;
+        }
+        .text-white {
+          color: #111827 !important;
+        }
+      }
+    </style>
   </head>
-  <body class="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white min-h-screen">
-    <div class="max-w-6xl mx-auto p-6">
-      <div class="bg-gray-800 rounded-xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-3 gap-0">
-        <!-- Player + cover (left) -->
-        <div class="md:col-span-1 p-6 flex flex-col items-center gap-6">
-          <div id="cover" class="w-64 h-64 bg-gradient-to-br from-indigo-600 to-pink-500 rounded-lg shadow-inner flex items-center justify-center overflow-hidden">
-            <!-- placeholder art: will attempt to show album art if available later -->
-            <svg id="coverSvg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-32 h-32 opacity-80 text-white">
-              <path fill="currentColor" d="M12 3C7 3 3 6 3 9.5c0 2 1.5 3.8 3.9 4.7C7 17 9.8 19 12 19s5-2 5.1-4.8c2.4-.9 3.9-2.7 3.9-4.7C21 6 17 3 12 3zm0 14c-2 0-3.7-1.4-4.5-3.3A6.7 6.7 0 0 0 12 13c1.9 0 3.6.8 4.5 2.2C15.7 15.6 14 17 12 17z"/>
-            </svg>
-          </div>
-
+  <body
+    class="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 text-white min-h-screen flex justify-center items-center"
+  >
+    <div class="max-w-6xl mx-auto p-6 flex">
+      <div
+        class="bg-gray-800 rounded-xl shadow-xl overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-0"
+      >
+        <!-- Player (left) -->
+        <div
+          class="md:col-span-1 p-6 flex justify-center items-center flex-col items-center gap-4"
+        >
           <div class="w-full text-center">
-            <div id="trackTitle" class="font-semibold text-lg truncate">{{title}}</div>
+            <div id="trackTitle" class="font-semibold text-lg truncate">
+              {{title}}
+            </div>
             <div id="trackIndex" class="text-sm text-gray-300 mt-1">0 / 0</div>
           </div>
 
           <div class="w-full">
-            <div class="flex items-center justify-center gap-4">
-              <button id="shuffle" title="随机播放" class="p-3 rounded-full bg-gray-700 hover:bg-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h6l3 4h8"/></svg>
-              </button>
-
-              <button id="prev" title="上一首" class="p-3 rounded-full bg-gray-700 hover:bg-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M12.8 3.2A1 1 0 0 0 11 4v5.1L4.6 4.5A1 1 0 0 0 3 5.3v9.4a1 1 0 0 0 1.6.8L11 10.9V16a1 1 0 0 0 1.8.8l4-5a1 1 0 0 0 0-1.6l-4-5z"/></svg>
-              </button>
-
-              <button id="playPause" title="播放/暂停" class="p-4 rounded-full bg-blue-600 hover:bg-blue-500 text-white">
-                <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3v18l15-9L5 3z"/></svg>
-                <svg id="pauseIcon" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 hidden" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zM14 5v14h4V5h-4z"/></svg>
-              </button>
-
-              <button id="next" title="下一首" class="p-3 rounded-full bg-gray-700 hover:bg-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M7.2 16.8A1 1 0 0 0 9 16V10.9l6.4 4.6A1 1 0 0 0 17 15.7V6.3a1 1 0 0 0-1.6-.8L9 9.1V4a1 1 0 0 0-1.8-.8l-4 5a1 1 0 0 0 0 1.6l4 5z"/></svg>
-              </button>
-
-              <button id="loop" title="循环" class="p-3 rounded-full bg-gray-700 hover:bg-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11a4 4 0 0 1 0 8H9"/></svg>
-              </button>
+            <!-- Large independent progress area -->
+            <div id="progressContainer" class="w-full mb-4">
+              <div
+                class="flex items-center justify-between text-sm text-gray-300 mb-2"
+              >
+                <div id="time">00:00</div>
+                <div id="duration">--:--</div>
+              </div>
+              <div
+                id="progressArea"
+                class="relative h-3 bg-gray-700 rounded overflow-hidden cursor-pointer"
+                aria-label="进度条"
+              >
+                <div
+                  id="bufferBar"
+                  class="absolute left-0 top-0 h-3 bg-gray-500"
+                  style="width: 0%"
+                ></div>
+                <div
+                  id="progressBar"
+                  class="absolute left-0 top-0 h-3 bg-blue-500"
+                  style="width: 0%"
+                ></div>
+                <div
+                  id="thumb"
+                  class="absolute top-1/2 -translate-y-1/2 left-0 w-4 h-4 bg-white rounded-full shadow transform -translate-x-1/2 opacity-90"
+                  style="left: 0%"
+                ></div>
+              </div>
             </div>
 
-            <div class="mt-4">
-              <div class="relative h-2 bg-gray-700 rounded overflow-hidden">
-                <div id="bufferBar" class="absolute left-0 top-0 h-2 bg-gray-500" style="width:0%"></div>
-                <div id="progressBar" class="absolute left-0 top-0 h-2 bg-blue-500" style="width:0%"></div>
-              </div>
-              <div class="flex items-center justify-between text-sm text-gray-300 mt-2">
-                <div id="time">00:00</div>
-                <div class="flex items-center gap-2">
-                  <label class="text-xs text-gray-300">倍速</label>
-                  <select id="rate" class="bg-gray-700 text-white rounded px-2 py-1 text-sm">
-                    <option value="0.5">0.5x</option>
-                    <option value="0.75">0.75x</option>
-                    <option value="1" selected>1x</option>
-                    <option value="1.25">1.25x</option>
-                    <option value="1.5">1.5x</option>
-                    <option value="2">2x</option>
-                  </select>
-                </div>
-              </div>
+            <div class="flex items-center justify-center gap-6">
+              <button
+                id="prev"
+                title="上一首"
+                class="p-3 rounded-full bg-gray-700 hover:bg-gray-600"
+              >
+                <
+              </button>
+
+              <button
+                id="playPause"
+                title="播放/暂停"
+                class="p-5 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-lg"
+              >
+                <svg
+                  id="playIcon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-7 h-7"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M5 3v18l15-9L5 3z" />
+                </svg>
+                <svg
+                  id="pauseIcon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="w-7 h-7 hidden"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M6 19h4V5H6v14zM14 5v14h4V5h-4z" />
+                </svg>
+              </button>
+
+              <button
+                id="next"
+                title="下一首"
+                class="p-3 rounded-full bg-gray-700 hover:bg-gray-600"
+              >
+                >
+              </button>
+
+              <!-- loop button removed per request -->
+            </div>
+
+            <div class="mt-3 flex items-center justify-center">
+              <label class="text-xs text-gray-300 mr-2">倍速</label>
+              <select
+                id="rate"
+                class="bg-gray-700 text-white rounded px-2 py-1 text-sm"
+              >
+                <option value="0.5">0.5x</option>
+                <option value="0.75">0.75x</option>
+                <option value="1" selected>1x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2x</option>
+              </select>
             </div>
           </div>
         </div>
 
         <!-- Playlist (right) -->
-        <div class="md:col-span-2 p-4 bg-gray-900">
+        <div class="md:col-span-1 p-4 bg-gray-900">
           <div class="flex items-center justify-between mb-4">
             <div class="text-sm text-gray-400">播放列表</div>
-            <div id="wakeStatus" class="text-sm text-gray-400">息屏: 未启用</div>
           </div>
           <div id="playlist" class="overflow-auto max-h-[60vh] pr-2">
             <!-- JS will populate the track list -->
@@ -85,44 +165,47 @@
 
     <audio id="player" preload="metadata"></audio>
 
+    <!-- audio-template-version: 2025-11-01T000000Z -->
     <script>
       // audioJson is inserted as escaped JSON string by server
+      console.log(
+        "[LocalShare] loaded audio template version: 2025-11-01T000000Z"
+      );
       const audios = JSON.parse("{{audioJson}}") || [];
       const startIndex = Number("{{startIndex}}") || 0;
       let idx = startIndex;
 
-      const player = document.getElementById('player');
-      const playPauseBtn = document.getElementById('playPause');
-      const prevBtn = document.getElementById('prev');
-      const nextBtn = document.getElementById('next');
-      const rateSel = document.getElementById('rate');
-      const timeEl = document.getElementById('time');
-      const trackTitle = document.getElementById('trackTitle');
-      const trackIndex = document.getElementById('trackIndex');
-      const playlistEl = document.getElementById('playlist');
-      const progressBar = document.getElementById('progressBar');
-      const bufferBar = document.getElementById('bufferBar');
-      const playIcon = document.getElementById('playIcon');
-      const pauseIcon = document.getElementById('pauseIcon');
-      const wakeStatus = document.getElementById('wakeStatus');
-      const shuffleBtn = document.getElementById('shuffle');
-      const loopBtn = document.getElementById('loop');
+      const player = document.getElementById("player");
+      const playPauseBtn = document.getElementById("playPause");
+      const prevBtn = document.getElementById("prev");
+      const nextBtn = document.getElementById("next");
+      const rateSel = document.getElementById("rate");
+      const timeEl = document.getElementById("time");
+      const trackTitle = document.getElementById("trackTitle");
+      const trackIndex = document.getElementById("trackIndex");
+      const playlistEl = document.getElementById("playlist");
+      const progressBar = document.getElementById("progressBar");
+      const bufferBar = document.getElementById("bufferBar");
+  const playIcon = document.getElementById("playIcon");
+  const pauseIcon = document.getElementById("pauseIcon");
 
       let wakeLock = null;
       let saveTimer = null;
-      let shuffled = false;
-      let loopMode = false;
 
       function formatTime(s) {
-        if (!isFinite(s)) return '00:00';
-        const m = Math.floor(s / 60).toString().padStart(2, '0');
-        const ss = Math.floor(s % 60).toString().padStart(2, '0');
+        if (!isFinite(s)) return "00:00";
+        const m = Math.floor(s / 60)
+          .toString()
+          .padStart(2, "0");
+        const ss = Math.floor(s % 60)
+          .toString()
+          .padStart(2, "0");
         return `${m}:${ss}`;
       }
 
       function savePosition() {
         try {
-          const key = 'audio_pos_' + encodeURIComponent(audios[idx] || '');
+          const key = "audio_pos_" + encodeURIComponent(audios[idx] || "");
           const data = { t: player.currentTime, idx };
           localStorage.setItem(key, JSON.stringify(data));
         } catch (e) {}
@@ -130,28 +213,26 @@
 
       function restorePositionForIndex(i) {
         try {
-          const key = 'audio_pos_' + encodeURIComponent(audios[i] || '');
+          const key = "audio_pos_" + encodeURIComponent(audios[i] || "");
           const raw = localStorage.getItem(key);
           if (!raw) return 0;
           const obj = JSON.parse(raw);
-          if (obj && typeof obj.t === 'number') return obj.t;
+          if (obj && typeof obj.t === "number") return obj.t;
         } catch (e) {}
         return 0;
       }
 
       async function requestWakeLock() {
         try {
-          if ('wakeLock' in navigator) {
-            wakeLock = await navigator.wakeLock.request('screen');
-            wakeStatus.textContent = '息屏: 已启用';
-            wakeLock.addEventListener('release', () => {
-              wakeStatus.textContent = '息屏: 已释放';
+          if ("wakeLock" in navigator) {
+            wakeLock = await navigator.wakeLock.request("screen");
+            // keep wakeLock reference; no visible UI update per user preference
+            wakeLock.addEventListener("release", () => {
+              // released
             });
-          } else {
-            wakeStatus.textContent = '息屏: 不支持';
           }
         } catch (e) {
-          wakeStatus.textContent = '息屏: 失败';
+          // ignore errors silently
         }
       }
 
@@ -160,47 +241,56 @@
           if (wakeLock) {
             wakeLock.release();
             wakeLock = null;
-            wakeStatus.textContent = '息屏: 未启用';
           }
         } catch (e) {}
       }
 
       function buildPlaylist() {
-        playlistEl.innerHTML = '';
+        playlistEl.innerHTML = "";
         audios.forEach((src, i) => {
-          const name = decodeURIComponent((src || '').split('/').pop() || src || '').replace(/\+/g, ' ');
-          const item = document.createElement('div');
-          item.className = 'p-3 rounded hover:bg-gray-800 cursor-pointer flex items-center gap-3';
+          const name = decodeURIComponent(
+            (src || "").split("/").pop() || src || ""
+          ).replace(/\+/g, " ");
+          const item = document.createElement("div");
+          item.className =
+            "p-3 rounded hover:bg-gray-800 cursor-pointer flex items-center gap-3";
           item.dataset.idx = String(i);
           item.innerHTML = `
-            <div class="w-10 h-10 bg-gray-700 rounded flex items-center justify-center text-sm text-gray-200">${i+1}</div>
+            <div class="w-10 text-center text-sm text-gray-200">${i + 1}</div>
             <div class="flex-1 min-w-0">
               <div class="truncate">${name}</div>
-              <div class="text-xs text-gray-500">${src.split('/').slice(-3).join('/')}</div>
             </div>
-            <div class="text-sm text-gray-400">--:--</div>
           `;
-          item.addEventListener('click', () => { loadIndex(i, true); });
+          item.addEventListener("click", () => {
+            loadIndex(i, true);
+          });
           playlistEl.appendChild(item);
         });
         highlightCurrent();
       }
 
       function highlightCurrent() {
-        Array.from(playlistEl.children).forEach((c) => c.classList.remove('bg-gray-800','ring','ring-blue-500'));
+        // highlight current track with a distinct background and text color
+        Array.from(playlistEl.children).forEach((c) =>
+          c.classList.remove("bg-blue-600", "text-white")
+        );
         const cur = playlistEl.querySelector(`[data-idx='${idx}']`);
-        if (cur) cur.classList.add('bg-gray-800','ring','ring-blue-500');
+        if (cur) cur.classList.add("bg-blue-600", "text-white");
       }
 
       function loadIndex(i, autoplay = false) {
         if (!audios || audios.length === 0) return;
         if (i < 0) i = 0;
         if (i >= audios.length) i = audios.length - 1;
-        try { savePosition(); } catch (e) {}
+        try {
+          savePosition();
+        } catch (e) {}
         idx = i;
         const src = audios[idx];
         player.src = src;
-        trackTitle.textContent = decodeURIComponent((src || '').split('/').pop() || src || '');
+        trackTitle.textContent = decodeURIComponent(
+          (src || "").split("/").pop() || src || ""
+        );
         trackIndex.textContent = `${idx + 1} / ${audios.length}`;
         const pos = restorePositionForIndex(idx);
         player.currentTime = Math.max(0, pos || 0);
@@ -209,92 +299,115 @@
       }
 
       // controls
-      playPauseBtn.addEventListener('click', () => {
-        if (player.paused) player.play(); else player.pause();
+      playPauseBtn.addEventListener("click", () => {
+        if (player.paused) player.play();
+        else player.pause();
       });
-      prevBtn.addEventListener('click', () => {
-        if (shuffled) loadIndex(Math.floor(Math.random() * audios.length), true);
-        else loadIndex(idx - 1, true);
+      // NOTE: swap next/prev handlers to match expected button positions
+      prevBtn.addEventListener("click", () => {
+        // previous -> go to previous index
+        loadIndex(idx - 1, true);
       });
-      nextBtn.addEventListener('click', () => {
-        if (shuffled) loadIndex(Math.floor(Math.random() * audios.length), true);
-        else loadIndex(idx + 1, true);
-      });
-
-      rateSel.addEventListener('change', () => { player.playbackRate = Number(rateSel.value) || 1; });
-
-      shuffleBtn.addEventListener('click', () => {
-        shuffled = !shuffled;
-        shuffleBtn.classList.toggle('bg-blue-600', shuffled);
+      nextBtn.addEventListener("click", () => {
+        // next -> go to next index
+        loadIndex(idx + 1, true);
       });
 
-      loopBtn.addEventListener('click', () => {
-        loopMode = !loopMode;
-        loopBtn.classList.toggle('bg-blue-600', loopMode);
+      rateSel.addEventListener("change", () => {
+        player.playbackRate = Number(rateSel.value) || 1;
       });
 
-      player.addEventListener('play', async () => {
-        playIcon.classList.add('hidden'); pauseIcon.classList.remove('hidden');
-        try { await requestWakeLock(); } catch (e) {}
+      player.addEventListener("play", async () => {
+        playIcon.classList.add("hidden");
+        pauseIcon.classList.remove("hidden");
+        try {
+          await requestWakeLock();
+        } catch (e) {}
       });
-      player.addEventListener('pause', () => {
-        playIcon.classList.remove('hidden'); pauseIcon.classList.add('hidden');
-        try { releaseWakeLock(); } catch (e) {}
+      player.addEventListener("pause", () => {
+        playIcon.classList.remove("hidden");
+        pauseIcon.classList.add("hidden");
+        try {
+          releaseWakeLock();
+        } catch (e) {}
       });
 
-      player.addEventListener('timeupdate', () => {
+      player.addEventListener("timeupdate", () => {
         const cur = player.currentTime || 0;
         const dur = player.duration || 0;
-        timeEl.textContent = `${formatTime(cur)} / ${isFinite(dur) ? formatTime(dur) : '--:--'}`;
+        timeEl.textContent = `${formatTime(cur)}`;
+        document.getElementById("duration").textContent =
+          isFinite(dur) && dur > 0 ? formatTime(dur) : "--:--";
         if (isFinite(dur) && dur > 0) {
           const pct = Math.min(100, Math.floor((cur / dur) * 100));
-          progressBar.style.width = pct + '%';
+          progressBar.style.width = pct + "%";
+          // move thumb
+          const thumbEl = document.getElementById("thumb");
+          if (thumbEl) thumbEl.style.left = pct + "%";
         }
         if (saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(savePosition, 1000);
       });
 
-      player.addEventListener('progress', () => {
+      player.addEventListener("progress", () => {
         try {
           const buffered = player.buffered;
           if (buffered.length) {
             const end = buffered.end(buffered.length - 1);
             const dur = player.duration || 1;
             const pct = Math.min(100, Math.floor((end / dur) * 100));
-            bufferBar.style.width = pct + '%';
+            bufferBar.style.width = pct + "%";
           }
         } catch (e) {}
       });
 
-      player.addEventListener('ended', () => {
+      player.addEventListener("ended", () => {
         if (idx < audios.length - 1) loadIndex(idx + 1, true);
-        else if (loopMode) loadIndex(0, true);
-        else { player.pause(); }
+        else {
+          player.pause();
+        }
       });
 
-      // click on progress bar to seek
-      document.querySelectorAll('#progressBar, #bufferBar').forEach((el) => {
-        el.parentElement.addEventListener('click', (e) => {
-          const rect = el.parentElement.getBoundingClientRect();
+      // click on progress area to seek
+      const progressArea = document.getElementById("progressArea");
+      if (progressArea) {
+        progressArea.addEventListener("click", (e) => {
+          const rect = progressArea.getBoundingClientRect();
           const x = e.clientX - rect.left;
           const pct = Math.max(0, Math.min(1, x / rect.width));
           const dur = player.duration || 0;
           if (isFinite(dur) && dur > 0) player.currentTime = pct * dur;
         });
-      });
+      }
 
       // keyboard
-      window.addEventListener('keydown', (e) => {
-        if (e.code === 'Space') { e.preventDefault(); if (player.paused) player.play(); else player.pause(); }
-        else if (e.key === 'ArrowLeft') { loadIndex(idx - 1, true); }
-        else if (e.key === 'ArrowRight') { loadIndex(idx + 1, true); }
+      window.addEventListener("keydown", (e) => {
+        if (e.code === "Space") {
+          e.preventDefault();
+          if (player.paused) player.play();
+          else player.pause();
+        } else if (e.key === "ArrowLeft") {
+          loadIndex(idx - 1, true);
+        } else if (e.key === "ArrowRight") {
+          loadIndex(idx + 1, true);
+        }
       });
 
-      document.addEventListener('visibilitychange', async () => {
-        if (document.visibilityState === 'visible' && !player.paused) try { await requestWakeLock(); } catch (e) {}
+      document.addEventListener("visibilitychange", async () => {
+        if (document.visibilityState === "visible" && !player.paused)
+          try {
+            await requestWakeLock();
+          } catch (e) {}
       });
 
-      window.addEventListener('beforeunload', () => { try { savePosition(); } catch (e) {} try { releaseWakeLock(); } catch (e) {} });
+      window.addEventListener("beforeunload", () => {
+        try {
+          savePosition();
+        } catch (e) {}
+        try {
+          releaseWakeLock();
+        } catch (e) {}
+      });
 
       // init
       try {
@@ -303,7 +416,8 @@
           player.playbackRate = Number(rateSel.value) || 1;
           loadIndex(idx, false);
         } else {
-          playlistEl.innerHTML = '<div class="text-gray-500 p-4">未找到音频文件</div>';
+          playlistEl.innerHTML =
+            '<div class="text-gray-500 p-4">未找到音频文件</div>';
         }
       } catch (e) {}
     </script>
