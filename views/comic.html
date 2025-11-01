@@ -6,54 +6,76 @@
     <title>{{title}}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      @media (prefers-color-scheme: dark) {
-        body { background-color: #000 !important; color: #e5e7eb !important; }
-        .text-white { color: #fff !important; }
+      body {
+        background-color: #f8fafc;
+        color: #111827;
       }
-      @media (prefers-color-scheme: light) {
-        body { background-color: #f8fafc !important; color: #111827 !important; }
-        .bg-black { background-color: #ffffff !important; }
-        img.fit-vertical { height: calc(100vh - 6rem); }
+      .bg-black {
+        background-color: #ffffff;
+      }
+      img.fit-vertical {
+        height: calc(100vh - 6rem);
       }
     </style>
   </head>
-  <body class="bg-black text-white min-h-screen flex items-center justify-center">
+  <body
+    class="bg-black text-white min-h-screen flex items-center justify-center"
+  >
     <div id="reader" class="w-full h-full relative">
       <!-- topbar removed per request (no title or back button) -->
 
-
-
-      <div id="imageWrap" class="w-full h-full flex items-center justify-center">
-        <img id="comicImage" src="" alt="comic" class="select-none fit-screen" />
+      <div
+        id="imageWrap"
+        class="w-full h-full flex items-center justify-center"
+      >
+        <img
+          id="comicImage"
+          src=""
+          alt="comic"
+          class="select-none fit-screen"
+        />
       </div>
 
-      <button id="prevBtn" class="absolute left-0 top-0 bottom-0 w-1/4 text-white/0 hover:text-white text-4xl">‹</button>
-      <button id="nextBtn" class="absolute right-0 top-0 bottom-0 w-1/4 text-white/0 hover:text-white text-4xl">›</button>
+      <button
+        id="prevBtn"
+        class="absolute left-0 top-0 bottom-0 w-1/4 text-white/0 hover:text-white text-4xl"
+      >
+        ‹
+      </button>
+      <button
+        id="nextBtn"
+        class="absolute right-0 top-0 bottom-0 w-1/4 text-white/0 hover:text-white text-4xl"
+      >
+        ›
+      </button>
 
       <!-- display mode: only vertical (no toggle) -->
 
-      <div id="footer" class="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-center bg-black/50 text-sm">
+      <div
+        id="footer"
+        class="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-center bg-black/50 text-sm"
+      >
         <div id="position">0 / 0</div>
       </div>
     </div>
 
     <script>
-  // imagesJson is inserted as an escaped JSON string by server
-  const images = JSON.parse("{{imagesJson}}") || [];
-  // startIndex is inserted as a plain number by server
-  const startIndex = Number("{{startIndex}}") || 0;
-  let idx = startIndex;
+      // imagesJson is inserted as an escaped JSON string by server
+      const images = JSON.parse("{{imagesJson}}") || [];
+      // startIndex is inserted as a plain number by server
+      const startIndex = Number("{{startIndex}}") || 0;
+      let idx = startIndex;
 
-      const imgEl = document.getElementById('comicImage');
-      const posEl = document.getElementById('position');
-      const prevBtn = document.getElementById('prevBtn');
-      const nextBtn = document.getElementById('nextBtn');
+      const imgEl = document.getElementById("comicImage");
+      const posEl = document.getElementById("position");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
 
       // Only vertical mode supported: fit-vertical (height fills viewport but whole image must remain visible)
       function applyVerticalMode() {
         if (!imgEl) return;
-        imgEl.classList.remove('fit-horizontal', 'fit-vertical');
-        imgEl.classList.add('fit-vertical');
+        imgEl.classList.remove("fit-horizontal", "fit-vertical");
+        imgEl.classList.add("fit-vertical");
       }
 
       function show(index) {
@@ -68,41 +90,56 @@
         if (images[idx - 1]) new Image().src = images[idx - 1];
       }
 
-      function next() { show(Math.min(images.length - 1, idx + 1)); }
-      function prev() { show(Math.max(0, idx - 1)); }
+      function next() {
+        show(Math.min(images.length - 1, idx + 1));
+      }
+      function prev() {
+        show(Math.max(0, idx - 1));
+      }
 
-      prevBtn.addEventListener('click', (e) => { e.preventDefault(); prev(); });
-      nextBtn.addEventListener('click', (e) => { e.preventDefault(); next(); });
-
+      prevBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        prev();
+      });
+      nextBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        next();
+      });
 
       // keyboard
-      window.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight' || e.key === 'PageDown') next();
-        if (e.key === 'ArrowLeft' || e.key === 'PageUp') prev();
-        if (e.key === 'Home') show(0);
-        if (e.key === 'End') show(images.length - 1);
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === "PageDown") next();
+        if (e.key === "ArrowLeft" || e.key === "PageUp") prev();
+        if (e.key === "Home") show(0);
+        if (e.key === "End") show(images.length - 1);
       });
 
       // touch swipe
       let touchStartX = 0;
-      window.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
-      window.addEventListener('touchend', (e) => {
+      window.addEventListener("touchstart", (e) => {
+        touchStartX = e.touches[0].clientX;
+      });
+      window.addEventListener("touchend", (e) => {
         const diff = e.changedTouches[0].clientX - touchStartX;
         if (Math.abs(diff) > 50) {
-          if (diff < 0) next(); else prev();
+          if (diff < 0) next();
+          else prev();
         }
       });
 
       // click on image advance
-      imgEl.addEventListener('click', (e) => {
+      imgEl.addEventListener("click", (e) => {
         const w = imgEl.getBoundingClientRect().width;
         const clickX = e.clientX - imgEl.getBoundingClientRect().left;
-        if (clickX / w > 0.6) next(); else if (clickX / w < 0.4) prev();
+        if (clickX / w > 0.6) next();
+        else if (clickX / w < 0.4) prev();
       });
 
-  // initialize mode (vertical only) and show at startIndex
-  try { applyVerticalMode(); } catch (e) {}
-  show(idx);
+      // initialize mode (vertical only) and show at startIndex
+      try {
+        applyVerticalMode();
+      } catch (e) {}
+      show(idx);
     </script>
     <style>
       /* mode styles for image */
@@ -127,7 +164,8 @@
       }
 
       /* make prev/next clickable regions occupy full height without affecting centering */
-      #prevBtn, #nextBtn {
+      #prevBtn,
+      #nextBtn {
         background: transparent;
         border: none;
         display: block;
