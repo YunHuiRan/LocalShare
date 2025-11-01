@@ -117,6 +117,35 @@ class TemplateRenderer {
     logger.error("【模板】 漫画模板加载失败", err);
     throw err;
   }
+
+  /**
+   * Render an audio player page. Template should include {{audioJson}}, {{title}} and {{startIndex}} placeholders.
+   */
+  public async renderAudioPage(audioJson: string, title: string, startIndex = 0): Promise<string> {
+    const candidates = [
+      path.join(__dirname, "../views/audio.html"),
+      path.join(process.cwd(), "views", "audio.html"),
+      path.join(process.cwd(), "dist", "views", "audio.html"),
+    ];
+
+    for (const p of candidates) {
+      try {
+        logger.info(`【模板】 尝试加载音频模板: ${p}`);
+        let content = await fs.readFile(p, "utf-8");
+        const escaped = audioJson.replace(/\\/g, "\\\\").replace(/\"/g, "\\\"");
+        content = content.replace("{{audioJson}}", escaped);
+        content = content.replace("{{startIndex}}", String(Number(startIndex) || 0));
+        content = content.replace("{{title}}", title);
+        return content;
+      } catch (e) {
+        logger.debug(`【模板】 未在路径找到音频模板: ${p}`);
+      }
+    }
+
+    const err = new Error(`audio template not found in candidates: ${candidates.join(",")}`);
+    logger.error("【模板】 音频模板加载失败", err);
+    throw err;
+  }
 }
 
 /**

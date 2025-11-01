@@ -570,6 +570,87 @@ export class VideoController {
       res.status(404).send("漫画资源未找到");
     }
   }
+
+  /**
+   * Render an audio player page for a folder or a single audio file.
+   * If a file is provided, the player will open the containing folder and
+   * start from that file.
+   */
+  public async audioPlayer(req: Request, res: Response): Promise<void> {
+    logger.debug("【audioPlayer】 入口");
+    try {
+      const rawPath = (req.params as any).path || (req.params as any)[0] || "";
+      const subPath = decodeURIComponent(String(rawPath || ""));
+      const targetPath = path.join(this.videoFolder, subPath);
+
+      if (!VideoController.isPathSafe(this.videoFolder, targetPath)) {
+        res.status(403).send("禁止访问");
+        return;
+      }
+
+      const stat = await fs.stat(targetPath);
+      let audios: string[] = [];
+      let title = "音频播放";
+      let startIndex = 0;
+
+      if (stat.isDirectory()) {
+        const dirents = await fs.readdir(targetPath, { withFileTypes: true });
+        const audioExts = mime.getAudioExtensions();
+        const items = dirents
+          .filter((d) => d.isFile())
+          .map((d) => d.name)
+          .filter((file) => audioExts.includes(path.extname(file).toLowerCase().replace(/^\./, "")))
+          .sort((a, b) => this.naturalSort(a, b));
+
+        audios = items.map((f) => {
+          const rel = path.posix.join(subPath, f).replace(/\\/g, "/");
+          return `/video/${encodeURIComponent(rel)}`;
+        });
+        title = path.basename(targetPath);
+        startIndex = 0;
+      } else if (stat.isFile()) {
+        const fileExt = path.extname(targetPath).toLowerCase().replace(/^\./, "");
+        if (!mime.isAudioExtension(fileExt)) {
+          // non-audio file, redirect to normal streaming
+          res.redirect(`/video/${encodeURIComponent(subPath)}`);
+          return;
+        }
+
+        const parent = path.dirname(targetPath);
+        const dirents = await fs.readdir(parent, { withFileTypes: true });
+        const audioExts = mime.getAudioExtensions();
+        const items = dirents
+          .filter((d) => d.isFile())
+          .map((d) => d.name)
+          .filter((file) => audioExts.includes(path.extname(file).toLowerCase().replace(/^\./, "")))
+          .sort((a, b) => this.naturalSort(a, b));
+
+        const fileName = path.basename(targetPath);
+        const relBase = path.posix.join(path.relative(this.videoFolder, parent)).replace(/\\/g, "/");
+        const urls = items.map((f) => {
+          const rel = relBase ? path.posix.join(relBase, f).replace(/\\/g, "/") : f;
+          return `/video/${encodeURIComponent(rel)}`;
+        });
+
+        const idx = items.indexOf(fileName);
+        startIndex = idx >= 0 ? idx : 0;
+        audios = urls;
+        title = fileName;
+      }
+
+      if (!audios || audios.length === 0) {
+        res.status(404).send("未找到音频文件");
+        return;
+      }
+
+      const html = await templateRenderer.renderAudioPage(JSON.stringify(audios), title, startIndex);
+      res.send(html);
+      logger.info(`【audioPlayer】 返回音频页面，音频数 ${audios.length}`);
+    } catch (err) {
+      logger.error("【audioPlayer】 失败", err as unknown);
+      res.status(404).send("音频资源未找到");
+    }
+  }
 }
 
 /**

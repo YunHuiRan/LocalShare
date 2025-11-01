@@ -14,6 +14,9 @@ router.get(/^\/video\/(.*)/, videoController.streamVideo.bind(videoController));
 // Comic viewer (for image reading)
 router.get(/^\/comic\/(.*)/, videoController.comicViewer.bind(videoController));
 
+// Audio player
+router.get(/^\/audio\/(.*)/, videoController.audioPlayer.bind(videoController));
+
 router.get(
   /^\/folder\/(.*)/,
   videoController.getFolderList.bind(videoController)

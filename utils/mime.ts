@@ -32,6 +32,13 @@ class Mime {
     heic: "image/heic",
     ico: "image/x-icon",
     svg: "image/svg+xml",
+    // audio
+    mp3: "audio/mpeg",
+    wav: "audio/wav",
+    aac: "audio/aac",
+    flac: "audio/flac",
+    ogg: "audio/ogg",
+    m4a: "audio/mp4",
   };
 
   /**
@@ -69,6 +76,23 @@ class Mime {
   public isImageExtension(ext: string): boolean {
     if (!ext) return false;
     return this.getImageExtensions().includes(ext.toLowerCase());
+  }
+
+  /**
+   * Get audio extensions
+   */
+  public getAudioExtensions(): string[] {
+    return Object.keys(this.mimeMap).filter((k) =>
+      String(this.mimeMap[k]).startsWith("audio/")
+    );
+  }
+
+  /**
+   * Check whether extension is audio
+   */
+  public isAudioExtension(ext: string): boolean {
+    if (!ext) return false;
+    return this.getAudioExtensions().includes(ext.toLowerCase());
   }
 }
 
