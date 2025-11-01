@@ -5,54 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{title}}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      body {
-        background-color: #f8fafc;
-        color: #111827;
-      }
-      .bg-black {
-        background-color: #ffffff;
-      }
-      img.fit-vertical {
-        height: calc(100vh - 6rem);
-      }
-    </style>
   </head>
-  <body
-    class="bg-black text-white min-h-screen flex items-center justify-center"
-  >
-    <div id="reader" class="w-full h-full relative">
-      <div
-        id="imageWrap"
-        class="w-full h-full flex items-center justify-center"
-      >
+  <body class="bg-black min-h-screen flex items-center justify-center">
+    <div class="w-full h-full relative">
+      <div class="w-full h-full flex items-center justify-center">
         <img
           id="comicImage"
           src=""
           alt="comic"
-          class="select-none fit-screen"
+          class="select-none fit-vertical"
         />
       </div>
 
       <button
         id="prevBtn"
-        class="absolute left-0 top-0 bottom-0 w-1/4 text-white/0 hover:text-white text-4xl"
-      >
-        ‹
-      </button>
+        class="absolute left-0 top-0 bottom-0 w-1/4 outline-none"
+      ></button>
+
       <button
         id="nextBtn"
-        class="absolute right-0 top-0 bottom-0 w-1/4 text-white/0 hover:text-white text-4xl"
-      >
-        ›
-      </button>
-
-      <div
-        id="footer"
-        class="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-center bg-black/50 text-sm"
-      >
-        <div id="position">0 / 0</div>
-      </div>
+        class="absolute right-0 top-0 bottom-0 w-1/4 outline-none"
+      ></button>
     </div>
 
     <script>
@@ -65,19 +38,15 @@
       const prevBtn = document.getElementById("prevBtn");
       const nextBtn = document.getElementById("nextBtn");
 
-      function applyVerticalMode() {
-        if (!imgEl) return;
-        imgEl.classList.remove("fit-horizontal", "fit-vertical");
-        imgEl.classList.add("fit-vertical");
-      }
-
       function show(index) {
         if (!images || images.length === 0) return;
         if (index < 0) index = 0;
         if (index >= images.length) index = images.length - 1;
+
         idx = index;
         imgEl.src = images[idx];
-        posEl.textContent = `${idx + 1} / ${images.length}`;
+
+        // 预加载相邻图片
         if (images[idx + 1]) new Image().src = images[idx + 1];
         if (images[idx - 1]) new Image().src = images[idx - 1];
       }
@@ -85,6 +54,7 @@
       function next() {
         show(Math.min(images.length - 1, idx + 1));
       }
+
       function prev() {
         show(Math.max(0, idx - 1));
       }
@@ -93,6 +63,7 @@
         e.preventDefault();
         prev();
       });
+
       nextBtn.addEventListener("click", (e) => {
         e.preventDefault();
         next();
@@ -105,18 +76,21 @@
         if (e.key === "End") show(images.length - 1);
       });
 
+      // 触摸事件
       let touchStartX = 0;
       window.addEventListener("touchstart", (e) => {
         touchStartX = e.touches[0].clientX;
       });
       window.addEventListener("touchend", (e) => {
         const diff = e.changedTouches[0].clientX - touchStartX;
+        // 判断滑动距离是否足够触发翻页
         if (Math.abs(diff) > 50) {
           if (diff < 0) next();
           else prev();
         }
       });
 
+      // 图片点击事件
       imgEl.addEventListener("click", (e) => {
         const w = imgEl.getBoundingClientRect().width;
         const clickX = e.clientX - imgEl.getBoundingClientRect().left;
@@ -124,9 +98,6 @@
         else if (clickX / w < 0.4) prev();
       });
 
-      try {
-        applyVerticalMode();
-      } catch (e) {}
       show(idx);
     </script>
     <style>
@@ -144,13 +115,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-      }
-
-      #prevBtn,
-      #nextBtn {
-        background: transparent;
-        border: none;
-        display: block;
       }
     </style>
   </body>

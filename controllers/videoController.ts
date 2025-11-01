@@ -7,13 +7,33 @@ import { getMimeType, mime } from "../utils/mime";
 import { templateRenderer } from "../utils/template";
 import { logger } from "../utils/logger";
 
+/**
+ * 视频控制器类
+ * 负责处理所有与视频相关的请求
+ */
 export class VideoController {
+  /**
+   * 视频文件夹路径
+   * @private
+   * @type {string}
+   */
   private videoFolder: string;
 
+  /**
+   * 创建一个新的视频控制器实例
+   * @param {string} videoFolder - 视频文件夹路径，默认为配置中的 VIDEO_FOLDER
+   */
   constructor(videoFolder: string = VIDEO_FOLDER) {
     this.videoFolder = videoFolder;
   }
 
+  /**
+   * 自然排序函数，用于对字符串进行自然排序（考虑数字）
+   * @private
+   * @param {string} a - 第一个比较字符串
+   * @param {string} b - 第二个比较字符串
+   * @returns {number} 比较结果：负数表示 a < b，0 表示相等，正数表示 a > b
+   */
   private naturalSort(a: string, b: string): number {
     return a.localeCompare(b, undefined, {
       numeric: true,
@@ -21,12 +41,25 @@ export class VideoController {
     });
   }
 
+  /**
+   * 检查目标路径是否在基础路径范围内，防止路径遍历攻击
+   * @static
+   * @param {string} base - 基础路径
+   * @param {string} target - 目标路径
+   * @returns {boolean} 如果目标路径在基础路径内返回 true，否则返回 false
+   */
   static isPathSafe(base: string, target: string): boolean {
     const resolvedBase = path.resolve(base);
     const resolvedTarget = path.resolve(target);
     return resolvedTarget.startsWith(resolvedBase);
   }
 
+  /**
+   * 获取视频列表页面
+   * @param {Request} _req - Express 请求对象
+   * @param {Response} res - Express 响应对象
+   * @returns {Promise<void>}
+   */
   public async getVideoList(_req: Request, res: Response): Promise<void> {
     logger.debug("【getVideoList】 入口");
     const cacheKey = "__videoListCache";
@@ -202,6 +235,13 @@ export class VideoController {
     }
   }
 
+  /**
+   * 流式传输视频文件
+   * 支持范围请求和完整的文件流传输
+   * @param {Request} req - Express 请求对象
+   * @param {Response} res - Express 响应对象
+   * @returns {Promise<void>}
+   */
   public async streamVideo(req: Request, res: Response): Promise<void> {
     logger.debug("【streamVideo】 入口");
     try {
@@ -313,6 +353,12 @@ export class VideoController {
     }
   }
 
+  /**
+   * 获取文件夹内容列表
+   * @param {Request} req - Express 请求对象
+   * @param {Response} res - Express 响应对象
+   * @returns {Promise<void>}
+   */
   public async getFolderList(req: Request, res: Response): Promise<void> {
     logger.debug("【getFolderList】 入口");
     try {
@@ -484,6 +530,12 @@ export class VideoController {
     }
   }
 
+  /**
+   * 漫画查看器页面
+   * @param {Request} req - Express 请求对象
+   * @param {Response} res - Express 响应对象
+   * @returns {Promise<void>}
+   */
   public async comicViewer(req: Request, res: Response): Promise<void> {
     logger.debug("【comicViewer】 入口");
     try {
@@ -573,6 +625,12 @@ export class VideoController {
     }
   }
 
+  /**
+   * 音频播放器页面
+   * @param {Request} req - Express 请求对象
+   * @param {Response} res - Express 响应对象
+   * @returns {Promise<void>}
+   */
   public async audioPlayer(req: Request, res: Response): Promise<void> {
     logger.debug("【audioPlayer】 入口");
     try {
@@ -668,4 +726,8 @@ export class VideoController {
   }
 }
 
+/**
+ * 视频控制器实例
+ * @type {VideoController}
+ */
 export const videoController = new VideoController();

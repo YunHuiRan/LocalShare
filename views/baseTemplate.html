@@ -5,34 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title></title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-      :root{
-        --el-color-primary: #409EFF; 
-        --el-color-success: #67C23A;
-        --el-color-warning: #E6A23C;
-        --el-color-danger: #F56C6C;
-        --el-color-info: #909399;
-
-        --el-surface: #ffffff;
-        --el-bg: #f7fafc;
-        --el-text: #111827;
-        --el-muted: #6b7280;
-      }
-
-      .bg-blue-600 { background-color: var(--el-color-primary) ; }
-      .text-blue-600 { color: var(--el-color-primary) ; }
-      a { color: var(--el-color-primary); }
-
-      .bg-white { background-color: var(--el-surface) ; }
-      .bg-gray-900, .bg-gray-800, .bg-gray-700, .bg-black { background-color: var(--el-bg) ; }
-
-      .text-white { color: var(--el-text) ; }
-      .text-gray-800 { color: var(--el-text) ; }
-      .text-gray-700, .text-gray-600, .text-gray-500 { color: var(--el-muted) ; }
-      .text-gray-300, .text-gray-400 { color: var(--el-muted) ; }
-
-      .el-highlight { background-color: var(--el-color-primary) ; color: #fff ; }
-    </style>
     <link
       href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"
       rel="stylesheet"
@@ -51,12 +23,14 @@
         </div>
       </div>
 
+      <!-- 面包屑导航区域 -->
       <nav class="mb-4 text-sm" aria-label="Breadcrumb">
         {{breadcrumb}}
       </nav>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {{videoItems}}
-          </div>
+      <!-- 内容网格区域，用于显示视频/文件等项目 -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {{videoItems}}
+      </div>
     </div>
     <script>

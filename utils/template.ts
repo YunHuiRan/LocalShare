@@ -4,15 +4,39 @@ import { logger } from "./logger";
 
 const baseDir = typeof __dirname !== "undefined" ? __dirname : process.cwd();
 
+/**
+ * 模板渲染器类
+ * 负责渲染各种页面模板
+ */
 class TemplateRenderer {
+  /**
+   * 模板文件路径
+   * @private
+   * @type {string}
+   */
   private templatePath: string;
+  
+  /**
+   * 缓存的模板内容
+   * @private
+   * @type {string|null}
+   */
   private cachedTemplate: string | null = null;
 
+  /**
+   * 创建模板渲染器实例
+   * @param {string} [templatePath] - 模板文件路径
+   */
   constructor(templatePath?: string) {
     this.templatePath =
       templatePath || path.join(baseDir, "../views/baseTemplate.html");
   }
 
+  /**
+   * 加载模板文件内容
+   * @private
+   * @returns {Promise<string>} 模板文件内容
+   */
   private async loadTemplate(): Promise<string> {
     if (this.cachedTemplate !== null) {
       logger.debug("【模板】 使用缓存模板");
@@ -44,6 +68,14 @@ class TemplateRenderer {
     throw err;
   }
 
+  /**
+   * 渲染视频列表页面
+   * @param {string} videoItems - 视频项 HTML 内容
+   * @param {string} folderPath - 文件夹路径
+   * @param {string} folderItems - 文件夹项 HTML 内容
+   * @param {string} breadcrumb - 面包屑导航 HTML 内容
+   * @returns {Promise<string>} 渲染后的完整 HTML 页面
+   */
   public async renderVideoListPage(
     videoItems: string,
     folderPath: string,
@@ -60,6 +92,13 @@ class TemplateRenderer {
     return html;
   }
 
+  /**
+   * 渲染漫画页面
+   * @param {string} imagesJson - 图片 URL 数组的 JSON 字符串
+   * @param {string} title - 页面标题
+   * @param {number} startIndex - 起始图片索引
+   * @returns {Promise<string>} 渲染后的完整 HTML 页面
+   */
   public async renderComicPage(
     imagesJson: string,
     title: string,
@@ -95,6 +134,13 @@ class TemplateRenderer {
     throw err;
   }
 
+  /**
+   * 渲染音频播放页面
+   * @param {string} audioJson - 音频 URL 数组的 JSON 字符串
+   * @param {string} title - 页面标题
+   * @param {number} startIndex - 起始音频索引
+   * @returns {Promise<string>} 渲染后的完整 HTML 页面
+   */
   public async renderAudioPage(
     audioJson: string,
     title: string,
@@ -131,6 +177,10 @@ class TemplateRenderer {
   }
 }
 
+/**
+ * 模板渲染器实例
+ * @type {TemplateRenderer}
+ */
 export const templateRenderer = new TemplateRenderer();
 
 export default TemplateRenderer;

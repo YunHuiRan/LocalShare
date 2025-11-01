@@ -11,30 +11,38 @@
       <div
         class="rounded-xl shadow-lg overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-0"
       >
+        <!-- 播放控制区域 -->
         <div
           class="md:col-span-1 p-6 flex justify-center items-center flex-col items-center gap-4"
         >
+          <!-- 音轨信息显示区域 -->
           <div class="w-full text-center text-gray-600">
             <div id="trackTitle" class="font-semibold text-lg truncate"></div>
             <div id="trackIndex" class="text-sm mt-1">0 / 0</div>
           </div>
 
+          <!-- 进度条和控制按钮区域 -->
           <div class="w-full">
+            <!-- 进度条容器 -->
             <div id="progressContainer" class="w-full mb-4">
+              <!-- 时间显示区域 -->
               <div class="flex items-center justify-between text-sm mb-2">
                 <div id="time">00:00</div>
                 <div id="duration">--:--</div>
               </div>
+              <!-- 进度条 -->
               <div
                 id="progressArea"
                 class="relative h-3 bg-gray-200 rounded overflow-hidden cursor-pointer"
                 aria-label="进度条"
               >
+                <!-- 进度条已播放部分 -->
                 <div
                   id="progressBar"
                   class="absolute left-0 top-0 h-3 bg-gray-300"
                   style="width: 0%"
                 ></div>
+                <!-- 进度条拖动点 -->
                 <div
                   id="thumb"
                   class="absolute top-1/2 -translate-y-1/2 left-0 w-4 h-4 bg-white rounded-full shadow transform -translate-x-1/2 opacity-90"
@@ -43,7 +51,9 @@
               </div>
             </div>
 
+            <!-- 控制按钮区域 -->
             <div class="flex items-center justify-center gap-6">
+              <!-- 上一首按钮 -->
               <button
                 id="prev"
                 title="上一首"
@@ -52,11 +62,13 @@
                 <
               </button>
 
+              <!-- 播放/暂停按钮 -->
               <button
                 id="playPause"
                 title="播放/暂停"
                 class="p-2 rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300 transition ease-in-out"
               >
+                <!-- 播放图标 -->
                 <svg
                   id="playIcon"
                   class="w-7 h-7"
@@ -65,6 +77,7 @@
                 >
                   <path d="M5 3v18l15-9L5 3z" />
                 </svg>
+                <!-- 暂停图标 -->
                 <svg
                   id="pauseIcon"
                   class="w-7 h-7 hidden"
@@ -75,6 +88,7 @@
                 </svg>
               </button>
 
+              <!-- 下一首按钮 -->
               <button
                 id="next"
                 title="下一首"
@@ -86,15 +100,19 @@
           </div>
         </div>
 
+        <!-- 播放列表区域 -->
         <div class="md:col-span-1 p-4">
+          <!-- 播放列表标题 -->
           <div class="flex items-center justify-between mb-4">
             <div class="text-sm text-gray-600">播放列表</div>
           </div>
+          <!-- 播放列表容器 -->
           <div id="playlist" class="overflow-auto max-h-[60vh] p-2"></div>
         </div>
       </div>
     </div>
 
+    <!-- 音频播放元素 -->
     <audio id="player" preload="metadata"></audio>
 
     <script>
@@ -114,9 +132,15 @@
       const playIcon = document.getElementById("playIcon");
       const pauseIcon = document.getElementById("pauseIcon");
 
+      // 唤醒锁和保存定时器变量
       let wakeLock = null;
       let saveTimer = null;
 
+      /**
+       * 格式化时间为 mm:ss 格式
+       * @param {number} s - 秒数
+       * @returns {string} 格式化后的时间字符串
+       */
       function formatTime(s) {
         if (!isFinite(s)) return "00:00";
         const m = Math.floor(s / 60)
@@ -128,6 +152,9 @@
         return `${m}:${ss}`;
       }
 
+      /**
+       * 保存当前播放位置到本地存储
+       */
       function savePosition() {
         try {
           const key = "audio_pos_" + encodeURIComponent(audios[idx] || "");
@@ -136,6 +163,11 @@
         } catch (e) {}
       }
 
+      /**
+       * 从本地存储恢复指定索引音频的播放位置
+       * @param {number} i - 音频索引
+       * @returns {number} 保存的播放位置（秒）
+       */
       function restorePositionForIndex(i) {
         try {
           const key = "audio_pos_" + encodeURIComponent(audios[i] || "");
@@ -147,6 +179,10 @@
         return 0;
       }
 
+      /**
+       * 请求屏幕唤醒锁以防止屏幕自动关闭
+       * @returns {Promise<void>}
+       */
       async function requestWakeLock() {
         try {
           if ("wakeLock" in navigator) {
@@ -156,6 +192,9 @@
         } catch (e) {}
       }
 
+      /**
+       * 释放屏幕唤醒锁
+       */
       function releaseWakeLock() {
         try {
           if (wakeLock) {
@@ -165,6 +204,9 @@
         } catch (e) {}
       }
 
+      /**
+       * 构建播放列表
+       */
       function buildPlaylist() {
         playlistEl.innerHTML = "";
         audios.forEach((src, i) => {
@@ -176,9 +218,7 @@
           item.innerHTML = `
             <div class="w-10 text-center text-sm text-gray-600">${i + 1}</div>
             <div class="flex-1 min-w-0">
-              <div class="truncate text-gray-600 truncate">${
-                name.split(".")[1]
-              }</div>
+              <div class="truncate text-gray-600 truncate">${name}</div>
             </div>
           `;
           item.addEventListener("click", () => {
@@ -189,6 +229,9 @@
         highlightCurrent();
       }
 
+      /**
+       * 高亮显示当前播放的音轨
+       */
       function highlightCurrent() {
         Array.from(playlistEl.children).forEach((c) => {
           c.classList.remove("border-gray-400");
@@ -201,31 +244,46 @@
         }
       }
 
+      /**
+       * 加载指定索引的音频
+       * @param {number} i - 音频索引
+       * @param {boolean} autoplay - 是否自动播放
+       */
       function loadIndex(i, autoplay = false) {
         if (!audios || audios.length === 0) return;
         if (i < 0) i = 0;
         if (i >= audios.length) i = audios.length - 1;
+
         try {
           savePosition();
         } catch (e) {}
+
+        // 更新当前索引和音频源
         idx = i;
         const src = audios[idx];
         player.src = src;
-        trackTitle.innerHTML = decodeURIComponent(src.split(".")[1]);
+        trackTitle.innerHTML = decodeURIComponent(src);
         trackIndex.textContent = `${idx + 1} / ${audios.length}`;
+
+        // 恢复播放位置
         const pos = restorePositionForIndex(idx);
         player.currentTime = Math.max(0, pos || 0);
         highlightCurrent();
+
+        // 如果需要自动播放则开始播放
         if (autoplay) player.play().catch(() => {});
       }
 
+      // 为播放/暂停按钮添加点击事件监听器
       playPauseBtn.addEventListener("click", () => {
         if (player.paused) player.play();
         else player.pause();
       });
+
       prevBtn.addEventListener("click", () => {
         loadIndex(idx - 1, true);
       });
+
       nextBtn.addEventListener("click", () => {
         loadIndex(idx + 1, true);
       });
@@ -237,6 +295,7 @@
           await requestWakeLock();
         } catch (e) {}
       });
+
       player.addEventListener("pause", () => {
         playIcon.classList.remove("hidden");
         pauseIcon.classList.add("hidden");
@@ -245,22 +304,28 @@
         } catch (e) {}
       });
 
+      // 为时间更新事件添加监听器
       player.addEventListener("timeupdate", () => {
         const cur = player.currentTime || 0;
         const dur = player.duration || 0;
         timeEl.textContent = `${formatTime(cur)}`;
         document.getElementById("duration").textContent =
           isFinite(dur) && dur > 0 ? formatTime(dur) : "--:--";
+
+        // 更新进度条显示
         if (isFinite(dur) && dur > 0) {
           const pct = Math.min(100, Math.floor((cur / dur) * 100));
           progressBar.style.width = pct + "%";
           const thumbEl = document.getElementById("thumb");
           if (thumbEl) thumbEl.style.left = pct + "%";
         }
+
+        // 定时保存播放位置
         if (saveTimer) clearTimeout(saveTimer);
         saveTimer = setTimeout(savePosition, 1000);
       });
 
+      // 为加载进度事件添加监听器
       player.addEventListener("progress", () => {
         try {
           const buffered = player.buffered;
@@ -272,6 +337,7 @@
         } catch (e) {}
       });
 
+      // 为播放结束事件添加监听器
       player.addEventListener("ended", () => {
         if (idx < audios.length - 1) loadIndex(idx + 1, true);
         else {
@@ -279,6 +345,7 @@
         }
       });
 
+      // 为进度条添加点击事件监听器
       const progressArea = document.getElementById("progressArea");
       if (progressArea) {
         progressArea.addEventListener("click", (e) => {
@@ -290,6 +357,7 @@
         });
       }
 
+      // 添加键盘事件监听器
       window.addEventListener("keydown", (e) => {
         if (e.code === "Space") {
           e.preventDefault();
@@ -302,6 +370,7 @@
         }
       });
 
+      // 添加页面可见性变化事件监听器
       document.addEventListener("visibilitychange", async () => {
         if (document.visibilityState === "visible" && !player.paused)
           try {
@@ -309,6 +378,7 @@
           } catch (e) {}
       });
 
+      // 添加页面卸载前事件监听器
       window.addEventListener("beforeunload", () => {
         try {
           savePosition();
@@ -318,6 +388,7 @@
         } catch (e) {}
       });
 
+      // 初始化播放器
       try {
         if (audios && audios.length > 0) {
           buildPlaylist();
