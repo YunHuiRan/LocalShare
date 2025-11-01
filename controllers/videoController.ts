@@ -8,46 +8,25 @@ import { templateRenderer } from "../utils/template";
 import { logger } from "../utils/logger";
 
 export class VideoController {
-  /**
-   * Base folder where videos are stored
-   * @type {string}
-   */
   private videoFolder: string;
 
-  /**
-   * Create a VideoController
-   * @param {string} [videoFolder=VIDEO_FOLDER] - the base folder for videos
-   */
   constructor(videoFolder: string = VIDEO_FOLDER) {
     this.videoFolder = videoFolder;
   }
 
-  /**
-   * Natural sort comparator (numeric-aware, case-insensitive)
-   */
   private naturalSort(a: string, b: string): number {
-    return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+    return a.localeCompare(b, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
   }
 
-  /**
-   * Ensure the target path is inside the base folder (prevent directory traversal)
-   * @param {string} base - base folder
-   * @param {string} target - target path to validate
-   * @returns {boolean}
-   */
   static isPathSafe(base: string, target: string): boolean {
     const resolvedBase = path.resolve(base);
     const resolvedTarget = path.resolve(target);
     return resolvedTarget.startsWith(resolvedBase);
   }
 
-  /**
-   * Render index page which lists videos and subfolders in the configured video folder.
-   * Caches HTML for a short period to reduce filesystem reads.
-   * @param {Request} _req
-   * @param {Response} res
-   * @returns {Promise<void>}
-   */
   public async getVideoList(_req: Request, res: Response): Promise<void> {
     logger.debug("【getVideoList】 入口");
     const cacheKey = "__videoListCache";
@@ -68,37 +47,47 @@ export class VideoController {
       });
       const names = dirents.map((d) => d.name);
 
-      // Build folder items HTML. If a folder contains files and ALL files are images,
-      // treat it as a comic folder and show the first image as a thumbnail.
-  const folderDirs = dirents.filter((d) => d.isDirectory());
+      const folderDirs = dirents.filter((d) => d.isDirectory());
       const imageExts = mime.getImageExtensions();
-      // extensions to ignore when determining if folder is a comic
-      const ignoreExts = new Set(["torrent", "nfo", "txt", "url", "sfv", "db", "ds_store"]);
+      const ignoreExts = new Set([
+        "torrent",
+        "nfo",
+        "txt",
+        "url",
+        "sfv",
+        "db",
+        "ds_store",
+      ]);
       const folderItemsArr = await Promise.all(
         folderDirs.map(async (d) => {
           const name = d.name;
           const subPath = path.join(this.videoFolder, name);
           try {
-            const subDirents = await fs.readdir(subPath, { withFileTypes: true });
-            // collect files and filter out hidden and ignored extensions
+            const subDirents = await fs.readdir(subPath, {
+              withFileTypes: true,
+            });
             const files = subDirents
               .filter((s) => s.isFile())
               .map((s) => s.name)
               .filter((fn) => {
                 if (!fn) return false;
-                if (fn.startsWith('.')) return false; // ignore hidden files like .torrent or .DS_Store
+                if (fn.startsWith(".")) return false;
                 const ext = path.extname(fn).toLowerCase().replace(/^\./, "");
                 if (!ext) return false;
                 if (ignoreExts.has(ext)) return false;
                 return true;
               });
             const hasFiles = files.length > 0;
-            // sort files naturally for consistent ordering
             files.sort((x, y) => this.naturalSort(x, y));
-            const allImages = hasFiles && files.every((f) => imageExts.includes(path.extname(f).toLowerCase().replace(/^\./, "")));
+            const allImages =
+              hasFiles &&
+              files.every((f) =>
+                imageExts.includes(
+                  path.extname(f).toLowerCase().replace(/^\./, "")
+                )
+              );
 
             if (allImages) {
-              // show thumbnail using first image (after natural sort)
               const first = files[0];
               const rel = path.posix.join(name, first).replace(/\\/g, "/");
               const thumb = `/video/${encodeURIComponent(rel)}`;
@@ -115,9 +104,7 @@ export class VideoController {
           </a>
         `;
             }
-          } catch (e) {
-            // ignore read errors and fall back to default folder view
-          }
+          } catch (e) {}
 
           const url = `/folder/${encodeURIComponent(name)}`;
           return `
@@ -138,7 +125,6 @@ export class VideoController {
 
       const supportedExts = mime.getSupportedExtensions();
 
-      // ensure consistent natural ordering for files
       names.sort((a, b) => this.naturalSort(a, b));
 
       let videoFilesHtml = names
@@ -187,7 +173,6 @@ export class VideoController {
         })
         .join("");
 
-      // If there are no video/image files but there are folders, show folders in main area
       if (videoFilesHtml.trim() === "" && folderItemsHtml.trim() !== "") {
         const moved = folderItemsHtml;
         folderItemsHtml = "";
@@ -217,12 +202,6 @@ export class VideoController {
     }
   }
 
-  /**
-   * Stream a video file. Respects Range header for partial content.
-   * @param {Request} req
-   * @param {Response} res
-   * @returns {Promise<void>}
-   */
   public async streamVideo(req: Request, res: Response): Promise<void> {
     logger.debug("【streamVideo】 入口");
     try {
@@ -243,21 +222,24 @@ export class VideoController {
       const fileSize = stat.size;
       logger.debug(`【streamVideo】 文件存在，大小 ${fileSize}`);
       const range = req.headers.range;
-      // caching: compute ETag and Last-Modified
       const mimeType = getMimeType(filename);
       const etag = `W/"${stat.size}-${stat.mtimeMs}"`;
       const lastModified = stat.mtime.toUTCString();
-      // For images, set a reasonable cache-control to avoid re-fetching on refresh
       const isImage = String(mimeType).startsWith("image/");
-      const cacheControl = isImage ? "public, max-age=86400" : "public, max-age=60"; // images: 1 day, others: 60s
+      const cacheControl = isImage
+        ? "public, max-age=86400"
+        : "public, max-age=60";
 
-      // Handle conditional requests (If-None-Match / If-Modified-Since) when not requesting a range
       if (!range) {
-        const ifNoneMatch = (req.headers["if-none-match"] as string) || undefined;
-        const ifModifiedSince = (req.headers["if-modified-since"] as string) || undefined;
+        const ifNoneMatch =
+          (req.headers["if-none-match"] as string) || undefined;
+        const ifModifiedSince =
+          (req.headers["if-modified-since"] as string) || undefined;
 
         if (ifNoneMatch === etag) {
-          logger.info(`【streamVideo】 条件命中 If-None-Match，返回 304 ${filename}`);
+          logger.info(
+            `【streamVideo】 条件命中 If-None-Match，返回 304 ${filename}`
+          );
           res.writeHead(304, {
             ETag: etag,
             "Last-Modified": lastModified,
@@ -270,7 +252,9 @@ export class VideoController {
         if (ifModifiedSince) {
           const imsTime = new Date(ifModifiedSince).getTime();
           if (!isNaN(imsTime) && imsTime >= stat.mtime.getTime()) {
-            logger.info(`【streamVideo】 条件命中 If-Modified-Since，返回 304 ${filename}`);
+            logger.info(
+              `【streamVideo】 条件命中 If-Modified-Since，返回 304 ${filename}`
+            );
             res.writeHead(304, {
               ETag: etag,
               "Last-Modified": lastModified,
@@ -329,12 +313,6 @@ export class VideoController {
     }
   }
 
-  /**
-   * List contents of a subfolder inside the video folder.
-   * @param {Request} req
-   * @param {Response} res
-   * @returns {Promise<void>}
-   */
   public async getFolderList(req: Request, res: Response): Promise<void> {
     logger.debug("【getFolderList】 入口");
     try {
@@ -352,10 +330,17 @@ export class VideoController {
         `【getFolderList】 列出目录 ${targetPath}，项数 ${dirents.length}`
       );
 
-      // Build folder items: show thumbnail if folder contains only images (treat as comic)
       const folderDirs = dirents.filter((d) => d.isDirectory());
       const imageExts = mime.getImageExtensions();
-      const ignoreExts = new Set(["torrent", "nfo", "txt", "url", "sfv", "db", "ds_store"]);
+      const ignoreExts = new Set([
+        "torrent",
+        "nfo",
+        "txt",
+        "url",
+        "sfv",
+        "db",
+        "ds_store",
+      ]);
       const folderItemsArr = await Promise.all(
         folderDirs.map(async (d) => {
           const name = d.name;
@@ -363,20 +348,28 @@ export class VideoController {
           const url = `/folder/${encodeURIComponent(next)}`;
           try {
             const childPath = path.join(targetPath, name);
-            const subDirents = await fs.readdir(childPath, { withFileTypes: true });
+            const subDirents = await fs.readdir(childPath, {
+              withFileTypes: true,
+            });
             const files = subDirents
               .filter((s) => s.isFile())
               .map((s) => s.name)
               .filter((fn) => {
                 if (!fn) return false;
-                if (fn.startsWith('.')) return false;
+                if (fn.startsWith(".")) return false;
                 const ext = path.extname(fn).toLowerCase().replace(/^\./, "");
                 if (!ext) return false;
                 if (ignoreExts.has(ext)) return false;
                 return true;
               });
             const hasFiles = files.length > 0;
-            const allImages = hasFiles && files.every((f) => imageExts.includes(path.extname(f).toLowerCase().replace(/^\./, "")));
+            const allImages =
+              hasFiles &&
+              files.every((f) =>
+                imageExts.includes(
+                  path.extname(f).toLowerCase().replace(/^\./, "")
+                )
+              );
             if (allImages) {
               const first = files.sort()[0];
               const rel = path.posix.join(next, first).replace(/\\/g, "/");
@@ -393,9 +386,7 @@ export class VideoController {
           </a>
         `;
             }
-          } catch (e) {
-            // ignore and fall back to default
-          }
+          } catch (e) {}
           return `
           <a href="${url}" class="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4">
             <div class="flex items-center gap-3">
@@ -462,7 +453,6 @@ export class VideoController {
         })
         .join("");
 
-      // If there are no files but only folders, show folders in main area instead of only left sidebar
       if (videoFilesHtml.trim() === "" && folderItemsHtml.trim() !== "") {
         const moved = folderItemsHtml;
         folderItemsHtml = "";
@@ -494,11 +484,6 @@ export class VideoController {
     }
   }
 
-  /**
-   * Render a comic reader page for a folder or a single image file.
-   * If a file is provided, the reader will open the containing folder and
-   * start from that image.
-   */
   public async comicViewer(req: Request, res: Response): Promise<void> {
     logger.debug("【comicViewer】 入口");
     try {
@@ -511,13 +496,12 @@ export class VideoController {
         return;
       }
 
-  // determine whether target is a folder or file
       const stat = await fs.stat(targetPath);
       let images: string[] = [];
       let title = "漫画阅读";
-  let startIndex = 0;
+      let startIndex = 0;
 
-          if (stat.isDirectory()) {
+      if (stat.isDirectory()) {
         const dirents = await fs.readdir(targetPath, { withFileTypes: true });
         const imgs = dirents
           .filter((d) => d.isFile())
@@ -526,18 +510,20 @@ export class VideoController {
             const ext = path.extname(file).toLowerCase().replace(/^\./, "");
             return mime.getImageExtensions().includes(ext);
           })
-            .sort((a, b) => this.naturalSort(a, b));
+          .sort((a, b) => this.naturalSort(a, b));
 
-          images = imgs.map((f) => {
-            const rel = path.posix.join(subPath, f).replace(/\\/g, "/");
-            return `/video/${encodeURIComponent(rel)}`;
-          });
-  title = path.basename(targetPath);
-  startIndex = 0;
-        } else if (stat.isFile()) {
-        const fileExt = path.extname(targetPath).toLowerCase().replace(/^\./, "");
+        images = imgs.map((f) => {
+          const rel = path.posix.join(subPath, f).replace(/\\/g, "/");
+          return `/video/${encodeURIComponent(rel)}`;
+        });
+        title = path.basename(targetPath);
+        startIndex = 0;
+      } else if (stat.isFile()) {
+        const fileExt = path
+          .extname(targetPath)
+          .toLowerCase()
+          .replace(/^\./, "");
         if (!mime.isImageExtension(fileExt)) {
-          // non-image file, redirect to normal streaming
           res.redirect(`/video/${encodeURIComponent(subPath)}`);
           return;
         }
@@ -551,20 +537,22 @@ export class VideoController {
             const ext = path.extname(file).toLowerCase().replace(/^\./, "");
             return mime.getImageExtensions().includes(ext);
           })
-            .sort((a, b) => this.naturalSort(a, b));
+          .sort((a, b) => this.naturalSort(a, b));
 
-          const fileName = path.basename(targetPath);
-          // build list of URLs in natural order; compute start index so viewer can start at clicked file
-          const relBase = path.posix.join(path.relative(this.videoFolder, parent)).replace(/\\/g, "/");
-          const urls = imgs.map((f) => {
-            const rel = relBase ? path.posix.join(relBase, f).replace(/\\/g, "/") : f;
-            return `/video/${encodeURIComponent(rel)}`;
-          });
+        const fileName = path.basename(targetPath);
+        const relBase = path.posix
+          .join(path.relative(this.videoFolder, parent))
+          .replace(/\\/g, "/");
+        const urls = imgs.map((f) => {
+          const rel = relBase
+            ? path.posix.join(relBase, f).replace(/\\/g, "/")
+            : f;
+          return `/video/${encodeURIComponent(rel)}`;
+        });
 
-          const startIndex = imgs.indexOf(fileName);
-          images = urls;
-    title = fileName;
-    // startIndex already computed above
+        const startIndex = imgs.indexOf(fileName);
+        images = urls;
+        title = fileName;
       }
 
       if (!images || images.length === 0) {
@@ -572,7 +560,11 @@ export class VideoController {
         return;
       }
 
-  const html = await templateRenderer.renderComicPage(JSON.stringify(images), title, startIndex);
+      const html = await templateRenderer.renderComicPage(
+        JSON.stringify(images),
+        title,
+        startIndex
+      );
       res.send(html);
       logger.info(`【comicViewer】 返回漫画页面，图片数 ${images.length}`);
     } catch (err) {
@@ -581,11 +573,6 @@ export class VideoController {
     }
   }
 
-  /**
-   * Render an audio player page for a folder or a single audio file.
-   * If a file is provided, the player will open the containing folder and
-   * start from that file.
-   */
   public async audioPlayer(req: Request, res: Response): Promise<void> {
     logger.debug("【audioPlayer】 入口");
     try {
@@ -609,7 +596,11 @@ export class VideoController {
         const items = dirents
           .filter((d) => d.isFile())
           .map((d) => d.name)
-          .filter((file) => audioExts.includes(path.extname(file).toLowerCase().replace(/^\./, "")))
+          .filter((file) =>
+            audioExts.includes(
+              path.extname(file).toLowerCase().replace(/^\./, "")
+            )
+          )
           .sort((a, b) => this.naturalSort(a, b));
 
         audios = items.map((f) => {
@@ -619,9 +610,11 @@ export class VideoController {
         title = path.basename(targetPath);
         startIndex = 0;
       } else if (stat.isFile()) {
-        const fileExt = path.extname(targetPath).toLowerCase().replace(/^\./, "");
+        const fileExt = path
+          .extname(targetPath)
+          .toLowerCase()
+          .replace(/^\./, "");
         if (!mime.isAudioExtension(fileExt)) {
-          // non-audio file, redirect to normal streaming
           res.redirect(`/video/${encodeURIComponent(subPath)}`);
           return;
         }
@@ -632,13 +625,21 @@ export class VideoController {
         const items = dirents
           .filter((d) => d.isFile())
           .map((d) => d.name)
-          .filter((file) => audioExts.includes(path.extname(file).toLowerCase().replace(/^\./, "")))
+          .filter((file) =>
+            audioExts.includes(
+              path.extname(file).toLowerCase().replace(/^\./, "")
+            )
+          )
           .sort((a, b) => this.naturalSort(a, b));
 
         const fileName = path.basename(targetPath);
-        const relBase = path.posix.join(path.relative(this.videoFolder, parent)).replace(/\\/g, "/");
+        const relBase = path.posix
+          .join(path.relative(this.videoFolder, parent))
+          .replace(/\\/g, "/");
         const urls = items.map((f) => {
-          const rel = relBase ? path.posix.join(relBase, f).replace(/\\/g, "/") : f;
+          const rel = relBase
+            ? path.posix.join(relBase, f).replace(/\\/g, "/")
+            : f;
           return `/video/${encodeURIComponent(rel)}`;
         });
 
@@ -653,7 +654,11 @@ export class VideoController {
         return;
       }
 
-      const html = await templateRenderer.renderAudioPage(JSON.stringify(audios), title, startIndex);
+      const html = await templateRenderer.renderAudioPage(
+        JSON.stringify(audios),
+        title,
+        startIndex
+      );
       res.send(html);
       logger.info(`【audioPlayer】 返回音频页面，音频数 ${audios.length}`);
     } catch (err) {
@@ -663,8 +668,4 @@ export class VideoController {
   }
 }
 
-/**
- * Singleton controller instance
- * @type {VideoController}
- */
 export const videoController = new VideoController();

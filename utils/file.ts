@@ -3,11 +3,6 @@ import { mime } from "./mime";
 import { logger } from "./logger";
 
 class FileUtils {
-  /**
-   * Check whether a path exists
-   * @param {string} filePath
-   * @returns {Promise<boolean>}
-   */
   public async exists(filePath: string): Promise<boolean> {
     try {
       logger.debug(`file.exists check exists: ${filePath}`);
@@ -20,11 +15,6 @@ class FileUtils {
     }
   }
 
-  /**
-   * Get video files in a folder filtered by supported mime extensions
-   * @param {string} folder
-   * @returns {Promise<string[]>}
-   */
   public async getVideoFiles(folder: string): Promise<string[]> {
     logger.debug(`file.getVideoFiles read dir: ${folder}`);
     const files: string[] = await fs.readdir(folder);
@@ -40,26 +30,12 @@ class FileUtils {
   }
 }
 
-/**
- * Shared FileUtils instance
- * @type {FileUtils}
- */
 export const fileUtils = new FileUtils();
 
-/**
- * Check whether a path exists (wrapper)
- * @param {string} filePath
- * @returns {Promise<boolean>}
- */
 export async function exists(filePath: string): Promise<boolean> {
   return fileUtils.exists(filePath);
 }
 
-/**
- * Get video files in folder (wrapper)
- * @param {string} folder
- * @returns {Promise<string[]>}
- */
 export async function getVideoFiles(folder: string): Promise<string[]> {
   return fileUtils.getVideoFiles(folder);
 }

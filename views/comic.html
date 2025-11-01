@@ -22,8 +22,6 @@
     class="bg-black text-white min-h-screen flex items-center justify-center"
   >
     <div id="reader" class="w-full h-full relative">
-      <!-- topbar removed per request (no title or back button) -->
-
       <div
         id="imageWrap"
         class="w-full h-full flex items-center justify-center"
@@ -49,8 +47,6 @@
         ›
       </button>
 
-      <!-- display mode: only vertical (no toggle) -->
-
       <div
         id="footer"
         class="absolute bottom-0 left-0 right-0 p-4 flex items-center justify-center bg-black/50 text-sm"
@@ -60,9 +56,7 @@
     </div>
 
     <script>
-      // imagesJson is inserted as an escaped JSON string by server
       const images = JSON.parse("{{imagesJson}}") || [];
-      // startIndex is inserted as a plain number by server
       const startIndex = Number("{{startIndex}}") || 0;
       let idx = startIndex;
 
@@ -71,7 +65,6 @@
       const prevBtn = document.getElementById("prevBtn");
       const nextBtn = document.getElementById("nextBtn");
 
-      // Only vertical mode supported: fit-vertical (height fills viewport but whole image must remain visible)
       function applyVerticalMode() {
         if (!imgEl) return;
         imgEl.classList.remove("fit-horizontal", "fit-vertical");
@@ -85,7 +78,6 @@
         idx = index;
         imgEl.src = images[idx];
         posEl.textContent = `${idx + 1} / ${images.length}`;
-        // preload neighbors
         if (images[idx + 1]) new Image().src = images[idx + 1];
         if (images[idx - 1]) new Image().src = images[idx - 1];
       }
@@ -106,7 +98,6 @@
         next();
       });
 
-      // keyboard
       window.addEventListener("keydown", (e) => {
         if (e.key === "ArrowRight" || e.key === "PageDown") next();
         if (e.key === "ArrowLeft" || e.key === "PageUp") prev();
@@ -114,7 +105,6 @@
         if (e.key === "End") show(images.length - 1);
       });
 
-      // touch swipe
       let touchStartX = 0;
       window.addEventListener("touchstart", (e) => {
         touchStartX = e.touches[0].clientX;
@@ -127,7 +117,6 @@
         }
       });
 
-      // click on image advance
       imgEl.addEventListener("click", (e) => {
         const w = imgEl.getBoundingClientRect().width;
         const clickX = e.clientX - imgEl.getBoundingClientRect().left;
@@ -135,16 +124,12 @@
         else if (clickX / w < 0.4) prev();
       });
 
-      // initialize mode (vertical only) and show at startIndex
       try {
         applyVerticalMode();
       } catch (e) {}
       show(idx);
     </script>
     <style>
-      /* mode styles for image */
-      /* Horizontal: width fills viewport, but don't exceed viewport height */
-      /* Vertical-only: height fills available viewport, but shrink to fit width if needed so the whole image is visible */
       img.fit-vertical {
         height: calc(100vh - 6rem);
         width: auto;
@@ -152,8 +137,6 @@
         object-fit: contain;
       }
 
-      /* ensure container uses full viewport space (account for overlays like footer and control buttons)
-         and centers the image */
       #imageWrap {
         padding: 0 2rem;
         height: calc(100vh - 4rem);
@@ -163,7 +146,6 @@
         justify-content: center;
       }
 
-      /* make prev/next clickable regions occupy full height without affecting centering */
       #prevBtn,
       #nextBtn {
         background: transparent;

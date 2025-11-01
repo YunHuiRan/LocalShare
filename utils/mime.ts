@@ -1,9 +1,4 @@
-/**
- * Map of file extension to mime type
- */
-
 class Mime {
-  /** Combined map of extension -> mime type for videos and images */
   private mimeMap: Record<string, string> = {
     // video
     mp4: "video/mp4",
@@ -41,55 +36,32 @@ class Mime {
     m4a: "audio/mp4",
   };
 
-  /**
-   * Get mime type for a filename
-   * @param {string} filename
-   * @returns {string}
-   */
   public getMimeType(filename: string): string {
     const fileExtension = filename.split(".").pop()?.toLowerCase() || "";
     return this.mimeMap[fileExtension] || "application/octet-stream";
   }
 
-  /**
-   * Get supported extensions (both video and image)
-   * @returns {string[]}
-   */
   public getSupportedExtensions(): string[] {
     return Object.keys(this.mimeMap).map((e) => e.toLowerCase());
   }
 
-  /**
-   * Get extensions that are images
-   * @returns {string[]}
-   */
   public getImageExtensions(): string[] {
     return Object.keys(this.mimeMap).filter((k) =>
       String(this.mimeMap[k]).startsWith("image/")
     );
   }
 
-  /**
-   * Check whether a given extension (without dot) is an image
-   * @param {string} ext
-   */
   public isImageExtension(ext: string): boolean {
     if (!ext) return false;
     return this.getImageExtensions().includes(ext.toLowerCase());
   }
 
-  /**
-   * Get audio extensions
-   */
   public getAudioExtensions(): string[] {
     return Object.keys(this.mimeMap).filter((k) =>
       String(this.mimeMap[k]).startsWith("audio/")
     );
   }
 
-  /**
-   * Check whether extension is audio
-   */
   public isAudioExtension(ext: string): boolean {
     if (!ext) return false;
     return this.getAudioExtensions().includes(ext.toLowerCase());
@@ -98,11 +70,6 @@ class Mime {
 
 export const mime = new Mime();
 
-/**
- * Convenience wrapper
- * @param {string} filename
- * @returns {string}
- */
 export function getMimeType(filename: string): string {
   return mime.getMimeType(filename);
 }
