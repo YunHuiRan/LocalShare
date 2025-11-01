@@ -11,6 +11,9 @@ router.get("/", videoController.getVideoList.bind(videoController));
 
 router.get(/^\/video\/(.*)/, videoController.streamVideo.bind(videoController));
 
+// Comic viewer (for image reading)
+router.get(/^\/comic\/(.*)/, videoController.comicViewer.bind(videoController));
+
 router.get(
   /^\/folder\/(.*)/,
   videoController.getFolderList.bind(videoController)

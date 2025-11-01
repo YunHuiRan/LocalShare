@@ -3,8 +3,9 @@
  */
 
 class Mime {
-  /** @type {Record<string, string>} */
-  private videoMimeMap: Record<string, string> = {
+  /** Combined map of extension -> mime type for videos and images */
+  private mimeMap: Record<string, string> = {
+    // video
     mp4: "video/mp4",
     mkv: "video/x-matroska",
     avi: "video/x-msvideo",
@@ -18,6 +19,19 @@ class Mime {
     mpg: "video/mpeg",
     mts: "video/MP2T",
     m2ts: "video/MP2T",
+    // common images
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    gif: "image/gif",
+    webp: "image/webp",
+    bmp: "image/bmp",
+    tif: "image/tiff",
+    tiff: "image/tiff",
+    avif: "image/avif",
+    heic: "image/heic",
+    ico: "image/x-icon",
+    svg: "image/svg+xml",
   };
 
   /**
@@ -26,16 +40,35 @@ class Mime {
    * @returns {string}
    */
   public getMimeType(filename: string): string {
-    const fileExtension = filename.split('.').pop()?.toLowerCase() || '';
-    return this.videoMimeMap[fileExtension] || 'application/octet-stream';
+    const fileExtension = filename.split(".").pop()?.toLowerCase() || "";
+    return this.mimeMap[fileExtension] || "application/octet-stream";
   }
 
   /**
-   * Get supported extensions
+   * Get supported extensions (both video and image)
    * @returns {string[]}
    */
   public getSupportedExtensions(): string[] {
-    return Object.keys(this.videoMimeMap).map((e) => e.toLowerCase());
+    return Object.keys(this.mimeMap).map((e) => e.toLowerCase());
+  }
+
+  /**
+   * Get extensions that are images
+   * @returns {string[]}
+   */
+  public getImageExtensions(): string[] {
+    return Object.keys(this.mimeMap).filter((k) =>
+      String(this.mimeMap[k]).startsWith("image/")
+    );
+  }
+
+  /**
+   * Check whether a given extension (without dot) is an image
+   * @param {string} ext
+   */
+  public isImageExtension(ext: string): boolean {
+    if (!ext) return false;
+    return this.getImageExtensions().includes(ext.toLowerCase());
   }
 }
 

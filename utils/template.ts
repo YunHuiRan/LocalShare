@@ -83,6 +83,40 @@ class TemplateRenderer {
 
     return html;
   }
+
+  /**
+   * Render a comic reader page. The template should include placeholders
+   * {{imagesJson}} and {{title}}.
+   * @param {string} imagesJson - JSON string of image URLs
+   * @param {string} title - page title
+   */
+  public async renderComicPage(imagesJson: string, title: string, startIndex = 0): Promise<string> {
+    // try to load comic template from common locations
+    const candidates = [
+      path.join(__dirname, "../views/comic.html"),
+      path.join(process.cwd(), "views", "comic.html"),
+      path.join(process.cwd(), "dist", "views", "comic.html"),
+    ];
+
+    for (const p of candidates) {
+      try {
+        logger.info(`【模板】 尝试加载漫画模板: ${p}`);
+        let content = await fs.readFile(p, "utf-8");
+  // escape JSON string to safely embed inside double quotes
+  const escaped = imagesJson.replace(/\\/g, "\\\\").replace(/\"/g, "\\\"");
+  content = content.replace("{{imagesJson}}", escaped);
+  content = content.replace("{{startIndex}}", String(Number(startIndex) || 0));
+        content = content.replace("{{title}}", title);
+        return content;
+      } catch (e) {
+        logger.debug(`【模板】 未在路径找到漫画模板: ${p}`);
+      }
+    }
+
+    const err = new Error(`comic template not found in candidates: ${candidates.join(",")}`);
+    logger.error("【模板】 漫画模板加载失败", err);
+    throw err;
+  }
 }
 
 /**
