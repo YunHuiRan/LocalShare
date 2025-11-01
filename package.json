@@ -4,13 +4,15 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/app.js",
-    "dev": "npx tsx app.ts"
+    "dev": "npx tsx app.ts",
+    "build:exe": "tsc && pkg dist/app.js --targets node18-win-x64 --output video-server.exe"
   },
   "devDependencies": {
     "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.6.2",
+    "pkg": "^5.8.1",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   },
