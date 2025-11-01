@@ -16,9 +16,7 @@
           class="md:col-span-1 p-6 flex justify-center items-center flex-col items-center gap-4"
         >
           <div class="w-full text-center text-gray-600">
-            <div id="trackTitle" class="font-semibold text-lg truncate">
-              {{title}}
-            </div>
+            <div id="trackTitle" class="font-semibold text-lg truncate"></div>
             <div id="trackIndex" class="text-sm mt-1">0 / 0</div>
           </div>
 
@@ -93,8 +91,6 @@
               >
                 >
               </button>
-
-              <!-- loop button removed per request -->
             </div>
 
             <div class="mt-3 flex items-center justify-center">
@@ -114,26 +110,18 @@
           </div>
         </div>
 
-        <!-- Playlist (right) -->
         <div class="md:col-span-1 p-4">
           <div class="flex items-center justify-between mb-4">
             <div class="text-sm text-gray-600">播放列表</div>
           </div>
-          <div id="playlist" class="overflow-auto max-h-[60vh] p-2">
-            <!-- JS will populate the track list -->
-          </div>
+          <div id="playlist" class="overflow-auto max-h-[60vh] p-2"></div>
         </div>
       </div>
     </div>
 
     <audio id="player" preload="metadata"></audio>
 
-    <!-- audio-template-version: 2025-11-01T000000Z -->
     <script>
-      // audioJson is inserted as escaped JSON string by server
-      console.log(
-        "[LocalShare] loaded audio template version: 2025-11-01T000000Z"
-      );
       const audios = JSON.parse("{{audioJson}}") || [];
       const startIndex = Number("{{startIndex}}") || 0;
       let idx = startIndex;
@@ -211,9 +199,7 @@
       function buildPlaylist() {
         playlistEl.innerHTML = "";
         audios.forEach((src, i) => {
-          const name = decodeURIComponent(
-            (src || "").split("/").pop() || src || ""
-          ).replace(/\+/g, " ");
+          const name = decodeURIComponent(src);
           const item = document.createElement("div");
           item.className =
             "p-3 rounded cursor-pointer flex items-center gap-3 border-2 border-transparent border-solid rounded-lg";
@@ -221,7 +207,8 @@
           item.innerHTML = `
             <div class="w-10 text-center text-sm text-gray-400">${i + 1}</div>
             <div class="flex-1 min-w-0">
-              <div class="truncate text-gray-400">${name}</div>
+              <div class="truncate text-gray-400 truncate">${name
+                .split(".")[1]}</div>
             </div>
           `;
           item.addEventListener("click", () => {
@@ -254,9 +241,7 @@
         idx = i;
         const src = audios[idx];
         player.src = src;
-        trackTitle.textContent = decodeURIComponent(
-          (src || "").split("/").pop() || src || ""
-        );
+        trackTitle.innerHTML = decodeURIComponent(src.split(".")[1]);
         trackIndex.textContent = `${idx + 1} / ${audios.length}`;
         const pos = restorePositionForIndex(idx);
         player.currentTime = Math.max(0, pos || 0);
