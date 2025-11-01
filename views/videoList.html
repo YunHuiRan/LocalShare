@@ -6,9 +6,8 @@
     <title></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      /* Element Plus inspired palette (light/dark) and mapping to commonly used utility classes */
       :root{
-        --el-color-primary: #409EFF; /* primary */
+        --el-color-primary: #409EFF; 
         --el-color-success: #67C23A;
         --el-color-warning: #E6A23C;
         --el-color-danger: #F56C6C;
@@ -19,16 +18,7 @@
         --el-text: #111827;
         --el-muted: #6b7280;
       }
-      @media (prefers-color-scheme: dark){
-        :root{
-          --el-surface: #0f1724;
-          --el-bg: #071024;
-          --el-text: #e5e7eb;
-          --el-muted: #9ca3af;
-        }
-      }
 
-      /* map a few frequently used Tailwind utility classes to Element Plus colors */
       .bg-blue-600 { background-color: var(--el-color-primary) ; }
       .text-blue-600 { color: var(--el-color-primary) ; }
       a { color: var(--el-color-primary); }
