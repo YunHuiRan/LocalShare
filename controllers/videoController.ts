@@ -28,6 +28,23 @@ export class VideoController {
   }
 
   /**
+   * 为 Content-Disposition 生成安全的头值，使用 RFC5987 对非 ASCII 字符编码
+   * @private
+   * @param {string} filename
+   * @returns {string}
+   */
+  private makeContentDisposition(filename: string): string {
+    if (!filename) return "inline";
+    // 移除可能导致 header 错误的控制字符和引号
+    const sanitized = filename.replace(/\r|\n|\"|\\/g, "_");
+    // 生成 ASCII 回退名（替换非可打印 ASCII）
+    const fallback = sanitized.replace(/[^\x20-\x7E]/g, "_");
+    // RFC5987 编码 (UTF-8 percent-encoding)
+    const encoded = encodeURIComponent(sanitized).replace(/'/g, "%27");
+    return `inline; filename="${fallback}"; filename*=UTF-8''${encoded}`;
+  }
+
+  /**
    * 自然排序函数，用于对字符串进行自然排序（考虑数字）
    * @private
    * @param {string} a - 第一个比较字符串
@@ -173,7 +190,7 @@ export class VideoController {
             ? `/comic/${encodeURIComponent(file)}`
             : isAudio
             ? `/audio/${encodeURIComponent(file)}`
-            : `/video/${encodeURIComponent(file)}`;
+            : `/watch/${encodeURIComponent(file)}`;
           if (isImage) {
             const thumb = `/video/${encodeURIComponent(file)}`;
             return `
@@ -316,6 +333,9 @@ export class VideoController {
           `【streamVideo】 Range 请求 start=${start} end=${end} chunk=${chunkSize}`
         );
         const file = createReadStream(videoPath, { start, end });
+        const contentDisposition = this.makeContentDisposition(
+          path.basename(videoPath)
+        );
         const head = {
           "Content-Range": `bytes ${start}-${end}/${fileSize}`,
           "Accept-Ranges": "bytes",
@@ -324,6 +344,7 @@ export class VideoController {
           ETag: etag,
           "Last-Modified": lastModified,
           "Cache-Control": cacheControl,
+          "Content-Disposition": contentDisposition,
         } as Record<string, string | number>;
 
         res.writeHead(206, head as any);
@@ -332,12 +353,17 @@ export class VideoController {
         file.pipe(res);
       } else {
         logger.info("【streamVideo】 完整流请求");
+        const contentDisposition = this.makeContentDisposition(
+          path.basename(videoPath)
+        );
         const head = {
           "Content-Length": fileSize,
           "Content-Type": mimeType,
+          "Accept-Ranges": "bytes",
           ETag: etag,
           "Last-Modified": lastModified,
           "Cache-Control": cacheControl,
+          "Content-Disposition": contentDisposition,
         } as Record<string, string | number>;
 
         res.writeHead(200, head as any);
@@ -350,6 +376,51 @@ export class VideoController {
     } catch (err) {
       logger.error("【streamVideo】 失败", err as unknown);
       res.status(404).send("视频文件未找到");
+    }
+  }
+
+  /**
+   * 播放页面（嵌入 <video> 的播放器）
+   * 如果目标是目录或图片/音频，会重定向到对应的页面
+   */
+  public async watch(req: Request, res: Response): Promise<void> {
+    logger.debug("【watch】 入口");
+    try {
+      const rawFilename = (req.params as any).filename || (req.params as any)[0];
+      const filename = decodeURIComponent(String(rawFilename || ""));
+      logger.info(`【watch】 请求文件 ${filename}`);
+      const videoPath = path.join(this.videoFolder, filename);
+
+      if (!VideoController.isPathSafe(this.videoFolder, videoPath)) {
+        logger.warn(`【watch】 路径越界: ${videoPath}`);
+        res.status(403).send("禁止访问");
+        return;
+      }
+
+      const stat = await fs.stat(videoPath);
+      if (stat.isDirectory()) {
+        res.redirect(`/folder/${encodeURIComponent(filename)}`);
+        return;
+      }
+
+      const ext = path.extname(videoPath).toLowerCase().replace(/^\./, "");
+      if (mime.isImageExtension(ext)) {
+        res.redirect(`/comic/${encodeURIComponent(filename)}`);
+        return;
+      }
+      if (mime.isAudioExtension(ext)) {
+        res.redirect(`/audio/${encodeURIComponent(filename)}`);
+        return;
+      }
+
+      const videoSrc = `/video/${encodeURIComponent(filename)}`;
+      const title = path.basename(videoPath);
+      const html = await templateRenderer.renderVideoPlayer(videoSrc, title);
+      res.send(html);
+      logger.info(`【watch】 返回播放器页面 ${filename}`);
+    } catch (err) {
+      logger.error("【watch】 失败", err as unknown);
+      res.status(404).send("资源未找到");
     }
   }
 
@@ -466,7 +537,7 @@ export class VideoController {
             ? `/comic/${encodeURIComponent(rel)}`
             : isAudio
             ? `/audio/${encodeURIComponent(rel)}`
-            : `/video/${encodeURIComponent(rel)}`;
+            : `/watch/${encodeURIComponent(rel)}`;
           if (isImage) {
             const thumb = `/video/${encodeURIComponent(rel)}`;
             return `

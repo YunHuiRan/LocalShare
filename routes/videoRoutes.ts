@@ -19,6 +19,9 @@ router.get("/", videoController.getVideoList.bind(videoController));
  */
 router.get(/^\/video\/(.*)/, videoController.streamVideo.bind(videoController));
 
+// 视频播放页面（嵌入 <video> 标签的播放器）
+router.get(/^\/watch\/(.*)/, videoController.watch?.bind(videoController) || videoController.streamVideo.bind(videoController));
+
 /**
  * 漫画查看器路由
  * GET /comic/* - 提供漫画查看器页面

@@ -175,6 +175,38 @@ class TemplateRenderer {
     logger.error("【模板】 音频模板加载失败", err);
     throw err;
   }
+
+  /**
+   * 渲染视频播放器页面
+   * @param {string} videoSrc - 视频资源 URL
+   * @param {string} title - 页面标题
+   * @returns {Promise<string>} 渲染后的 HTML 页面
+   */
+  public async renderVideoPlayer(videoSrc: string, title: string): Promise<string> {
+    const candidates = [
+      path.join(__dirname, "../views/video.html"),
+      path.join(process.cwd(), "views", "video.html"),
+      path.join(process.cwd(), "dist", "views", "video.html"),
+    ];
+
+    for (const p of candidates) {
+      try {
+        logger.info(`【模板】 尝试加载视频模板: ${p}`);
+        let content = await fs.readFile(p, "utf-8");
+        content = content.replace("{{videoSrc}}", videoSrc);
+        content = content.replace("{{title}}", title);
+        return content;
+      } catch (e) {
+        logger.debug(`【模板】 未在路径找到视频模板: ${p}`);
+      }
+    }
+
+    const err = new Error(
+      `video template not found in candidates: ${candidates.join(",")}`
+    );
+    logger.error("【模板】 视频模板加载失败", err);
+    throw err;
+  }
 }
 
 /**
