@@ -22,7 +22,20 @@ const app = express();
 /**
  * 启用 gzip 压缩中间件
  */
-app.use(compression());
+// 压缩中间件：对大文件（视频流）和带 Range 的请求禁用压缩，避免破坏媒体流
+app.use(
+  compression({
+    filter: (req, res) => {
+      try {
+        const url = String(req.url || "");
+        // 如果是视频流或播放器页面或存在 Range 请求，则不要压缩
+        if (url.startsWith("/video/") || url.startsWith("/watch/")) return false;
+        if (req.headers && req.headers.range) return false;
+      } catch (e) {}
+      return compression.filter(req, res);
+    },
+  })
+);
 
 /**
  * 启用 CORS 跨域资源共享中间件
