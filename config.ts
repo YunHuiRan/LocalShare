@@ -8,4 +8,4 @@ export const PORT: number = 3000;
  * 视频文件存储文件夹路径
  * @type {string}
  */
-export const VIDEO_FOLDER: string = "F:\\anime";
+export const VIDEO_FOLDER: string = "F:\\新建文件夹";
