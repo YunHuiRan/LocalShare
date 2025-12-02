@@ -3,14 +3,21 @@ import cors from "cors";
 import compression from "compression";
 import fs from "fs";
 import videoRoutes from "./routes/videoRoutes";
-import { PORT, VIDEO_FOLDER } from "./config";
+import { PORT, VIDEO_FOLDER, VIDEO_FOLDERS } from "./config";
 import { logger } from "./utils/logger";
 
 /**
  * 检查视频文件夹是否存在，如果不存在则创建该文件夹
  */
-if (!fs.existsSync(VIDEO_FOLDER)) {
-  fs.mkdirSync(VIDEO_FOLDER);
+// 确保每个配置的共享目录存在（支持多个路径）
+for (const folder of VIDEO_FOLDERS) {
+  try {
+    if (!fs.existsSync(folder)) {
+      fs.mkdirSync(folder, { recursive: true });
+    }
+  } catch (e) {
+    logger.error(`创建共享目录失败: ${folder}`, e as any);
+  }
 }
 
 /**
@@ -88,7 +95,7 @@ function tryListen(port: number, attemptsLeft = 3) {
     logger.info(
       `视频服务器已启动，访问地址: http://localhost:${port}（启动耗时 ${took}ms）`
     );
-    logger.info(`正在共享文件夹: ${VIDEO_FOLDER}`);
+    logger.info(`正在共享文件夹: ${JSON.stringify(VIDEO_FOLDERS)}`);
     logger.info(
       `节点版本: ${process.version}，进程 PID: ${String(process.pid)}`
     );
