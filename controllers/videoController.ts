@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import fs from "fs/promises";
 import { createReadStream } from "fs";
 import path from "path";
-import { VIDEO_FOLDER } from "../config";
+import { VIDEO_FOLDER, VIDEO_FOLDERS } from "../config";
 import { getMimeType, mime } from "../utils/mime";
 import { templateRenderer } from "../utils/template";
 import { logger } from "../utils/logger";
@@ -18,13 +18,40 @@ export class VideoController {
    * @type {string}
    */
   private videoFolder: string;
+  private videoFolders: string[];
 
   /**
    * 创建一个新的视频控制器实例
    * @param {string} videoFolder - 视频文件夹路径，默认为配置中的 VIDEO_FOLDER
    */
-  constructor(videoFolder: string = VIDEO_FOLDER) {
-    this.videoFolder = videoFolder;
+  constructor(videoFolders: string[] = [VIDEO_FOLDER]) {
+    this.videoFolders = videoFolders;
+    this.videoFolder = videoFolders[0];
+  }
+
+  private getRootName(folderPath: string): string {
+    return path.basename(folderPath) || folderPath;
+  }
+
+  /**
+   * 解析请求中的子路径，支持以根目录名称作为前缀的多根映射。
+   * 如果只配置了一个根，会把整个子路径当作相对路径处理。
+   * 返回 null 表示找不到对应的根（多根模式下提供了未知的前缀）
+   */
+  private resolveBaseAndRel(subPath: string): { base: string; relPath: string } | null {
+    const clean = String(subPath || "").replace(/^\/+|\/+$/g, "");
+    if (!clean) return { base: this.videoFolders[0], relPath: "" };
+    const parts = clean.split(/[\\/]+/);
+    const first = parts[0];
+    const match = this.videoFolders.find((f) => this.getRootName(f) === first);
+    if (match) {
+      const rel = parts.slice(1).join(path.sep);
+      return { base: match, relPath: rel };
+    }
+    if (this.videoFolders.length === 1) {
+      return { base: this.videoFolders[0], relPath: clean };
+    }
+    return null;
   }
 
   /**
@@ -92,6 +119,31 @@ export class VideoController {
     }
 
     try {
+      // 如果配置了多个根，则首页显示各根目录作为独立文件夹
+      if (this.videoFolders && this.videoFolders.length > 1) {
+        const folderItemsArr = this.videoFolders.map((f) => {
+          const name = this.getRootName(f);
+          const url = `/folder/${encodeURIComponent(name)}`;
+          return `
+          <a href="${url}" class="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-4">
+            <div class="flex items-center gap-3">
+              <i class="fa fa-folder text-3xl text-yellow-500"></i>
+              <div class="truncate">
+                <div class="font-medium">${name}</div>
+                <div class="text-xs text-gray-500 truncate">根目录 · ${f}</div>
+              </div>
+            </div>
+          </a>
+        `;
+        });
+
+        const folderItemsHtml = folderItemsArr.join("");
+        const html = await templateRenderer.renderVideoListPage("", "根目录", folderItemsHtml, `<a href=\"/\" class=\"text-blue-600 hover:underline\">Home</a>`);
+        res.send(html);
+        logger.debug("【getVideoList】 退出（多根首页）");
+        return;
+      }
+
       const dirents = await fs.readdir(this.videoFolder, {
         withFileTypes: true,
       });
@@ -266,9 +318,15 @@ export class VideoController {
         (req.params as any).filename || (req.params as any)[0];
       const filename = decodeURIComponent(String(rawFilename || ""));
       logger.info(`【streamVideo】 请求文件 ${filename}`);
-      const videoPath = path.join(this.videoFolder, filename);
+      const resolved = this.resolveBaseAndRel(filename);
+      if (!resolved) {
+        logger.warn(`【streamVideo】 未知根或路径: ${filename}`);
+        res.status(404).send("视频文件未找到");
+        return;
+      }
+      const videoPath = path.join(resolved.base, resolved.relPath);
 
-      if (!VideoController.isPathSafe(this.videoFolder, videoPath)) {
+      if (!VideoController.isPathSafe(resolved.base, videoPath)) {
         logger.warn(`【streamVideo】 路径越界: ${videoPath}`);
         res.status(403).send("禁止访问");
         return;
@@ -389,9 +447,15 @@ export class VideoController {
       const rawFilename = (req.params as any).filename || (req.params as any)[0];
       const filename = decodeURIComponent(String(rawFilename || ""));
       logger.info(`【watch】 请求文件 ${filename}`);
-      const videoPath = path.join(this.videoFolder, filename);
+      const resolved = this.resolveBaseAndRel(filename);
+      if (!resolved) {
+        logger.warn(`【watch】 未知根或路径: ${filename}`);
+        res.status(404).send("资源未找到");
+        return;
+      }
+      const videoPath = path.join(resolved.base, resolved.relPath);
 
-      if (!VideoController.isPathSafe(this.videoFolder, videoPath)) {
+      if (!VideoController.isPathSafe(resolved.base, videoPath)) {
         logger.warn(`【watch】 路径越界: ${videoPath}`);
         res.status(403).send("禁止访问");
         return;
@@ -435,9 +499,14 @@ export class VideoController {
     try {
       const rawPath = (req.params as any).path || (req.params as any)[0] || "";
       const subPath = decodeURIComponent(String(rawPath || ""));
-      const targetPath = path.join(this.videoFolder, subPath);
+      const resolved = this.resolveBaseAndRel(subPath);
+      if (!resolved) {
+        res.status(404).send("未找到目录");
+        return;
+      }
+      const targetPath = path.join(resolved.base, resolved.relPath);
 
-      if (!VideoController.isPathSafe(this.videoFolder, targetPath)) {
+      if (!VideoController.isPathSafe(resolved.base, targetPath)) {
         res.status(403).send("禁止访问");
         return;
       }
@@ -612,9 +681,14 @@ export class VideoController {
     try {
       const rawPath = (req.params as any).path || (req.params as any)[0] || "";
       const subPath = decodeURIComponent(String(rawPath || ""));
-      const targetPath = path.join(this.videoFolder, subPath);
+      const resolved = this.resolveBaseAndRel(subPath);
+      if (!resolved) {
+        res.status(404).send("资源未找到");
+        return;
+      }
+      const targetPath = path.join(resolved.base, resolved.relPath);
 
-      if (!VideoController.isPathSafe(this.videoFolder, targetPath)) {
+      if (!VideoController.isPathSafe(resolved.base, targetPath)) {
         res.status(403).send("禁止访问");
         return;
       }
@@ -664,7 +738,7 @@ export class VideoController {
 
         const fileName = path.basename(targetPath);
         const relBase = path.posix
-          .join(path.relative(this.videoFolder, parent))
+          .join(path.relative(resolved.base, parent))
           .replace(/\\/g, "/");
         const urls = imgs.map((f) => {
           const rel = relBase
@@ -707,9 +781,14 @@ export class VideoController {
     try {
       const rawPath = (req.params as any).path || (req.params as any)[0] || "";
       const subPath = decodeURIComponent(String(rawPath || ""));
-      const targetPath = path.join(this.videoFolder, subPath);
+      const resolved = this.resolveBaseAndRel(subPath);
+      if (!resolved) {
+        res.status(404).send("音频资源未找到");
+        return;
+      }
+      const targetPath = path.join(resolved.base, resolved.relPath);
 
-      if (!VideoController.isPathSafe(this.videoFolder, targetPath)) {
+      if (!VideoController.isPathSafe(resolved.base, targetPath)) {
         res.status(403).send("禁止访问");
         return;
       }
@@ -763,7 +842,7 @@ export class VideoController {
 
         const fileName = path.basename(targetPath);
         const relBase = path.posix
-          .join(path.relative(this.videoFolder, parent))
+          .join(path.relative(resolved.base, parent))
           .replace(/\\/g, "/");
         const urls = items.map((f) => {
           const rel = relBase
@@ -801,4 +880,4 @@ export class VideoController {
  * 视频控制器实例
  * @type {VideoController}
  */
-export const videoController = new VideoController();
+export const videoController = new VideoController(VIDEO_FOLDERS);

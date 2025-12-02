@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title></title>
+    <title>LocalShare - {{folderPath}}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css"
@@ -27,6 +27,11 @@
       <nav class="mb-4 text-sm" aria-label="Breadcrumb">
         {{breadcrumb}}
       </nav>
+
+      <!-- 文件夹卡片（例如多根首页或子目录中的子文件夹） -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+        {{folderItems}}
+      </div>
 
       <!-- 内容网格区域，用于显示视频/文件等项目 -->
       <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
