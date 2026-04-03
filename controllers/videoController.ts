@@ -55,6 +55,29 @@ export class VideoController {
   }
 
   /**
+   * 异步解析：先按根名匹配，若未匹配则尝试在每个根下查找该相对路径（向后兼容旧链接）
+   */
+  private async asyncResolveBaseAndRel(subPath: string): Promise<{ base: string; relPath: string } | null> {
+    const clean = String(subPath || "").replace(/^\/+|\/+$/g, "");
+    const direct = this.resolveBaseAndRel(clean);
+    if (direct) return direct;
+
+    // 未按根名匹配且配置了多个根：尝试在每个根下查找该相对路径是否存在
+    for (const root of this.videoFolders) {
+      try {
+        const candidate = path.join(root, clean);
+        // 如果存在该路径（文件或目录），则认为该 root 是匹配的基准
+        await fs.stat(candidate);
+        return { base: root, relPath: clean };
+      } catch (e) {
+        // 不存在则继续
+      }
+    }
+
+    return null;
+  }
+
+  /**
    * 为 Content-Disposition 生成安全的头值，使用 RFC5987 对非 ASCII 字符编码
    * @private
    * @param {string} filename
@@ -318,7 +341,7 @@ export class VideoController {
         (req.params as any).filename || (req.params as any)[0];
       const filename = decodeURIComponent(String(rawFilename || ""));
       logger.info(`【streamVideo】 请求文件 ${filename}`);
-      const resolved = this.resolveBaseAndRel(filename);
+      const resolved = await this.asyncResolveBaseAndRel(filename);
       if (!resolved) {
         logger.warn(`【streamVideo】 未知根或路径: ${filename}`);
         res.status(404).send("视频文件未找到");
@@ -447,7 +470,7 @@ export class VideoController {
       const rawFilename = (req.params as any).filename || (req.params as any)[0];
       const filename = decodeURIComponent(String(rawFilename || ""));
       logger.info(`【watch】 请求文件 ${filename}`);
-      const resolved = this.resolveBaseAndRel(filename);
+      const resolved = await this.asyncResolveBaseAndRel(filename);
       if (!resolved) {
         logger.warn(`【watch】 未知根或路径: ${filename}`);
         res.status(404).send("资源未找到");
@@ -499,7 +522,7 @@ export class VideoController {
     try {
       const rawPath = (req.params as any).path || (req.params as any)[0] || "";
       const subPath = decodeURIComponent(String(rawPath || ""));
-      const resolved = this.resolveBaseAndRel(subPath);
+      const resolved = await this.asyncResolveBaseAndRel(subPath);
       if (!resolved) {
         res.status(404).send("未找到目录");
         return;
@@ -681,7 +704,7 @@ export class VideoController {
     try {
       const rawPath = (req.params as any).path || (req.params as any)[0] || "";
       const subPath = decodeURIComponent(String(rawPath || ""));
-      const resolved = this.resolveBaseAndRel(subPath);
+      const resolved = await this.asyncResolveBaseAndRel(subPath);
       if (!resolved) {
         res.status(404).send("资源未找到");
         return;
@@ -781,7 +804,7 @@ export class VideoController {
     try {
       const rawPath = (req.params as any).path || (req.params as any)[0] || "";
       const subPath = decodeURIComponent(String(rawPath || ""));
-      const resolved = this.resolveBaseAndRel(subPath);
+      const resolved = await this.asyncResolveBaseAndRel(subPath);
       if (!resolved) {
         res.status(404).send("音频资源未找到");
         return;
