@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import fs from "fs/promises";
-import { createReadStream } from "fs";
+import { createReadStream, type Dirent } from "fs";
 import path from "path";
 import { VIDEO_FOLDER, VIDEO_FOLDERS } from "../config";
 import { getMimeType, mime } from "../utils/mime";
@@ -109,6 +109,73 @@ export class VideoController {
   }
 
   /**
+   * 获取文件/目录的创建时间（毫秒时间戳）
+   * 优先使用 birthtime（创建时间）；部分文件系统不支持时会返回 0，
+   * 此时回退到 mtime（修改时间）。
+   * @private
+   * @param {string} targetPath - 文件或目录的完整路径
+   * @returns {Promise<number>} 创建时间（毫秒时间戳），读取失败返回 0
+   */
+  private async getCreationTimeMs(targetPath: string): Promise<number> {
+    try {
+      const st = await fs.stat(targetPath);
+      if (st.birthtimeMs && st.birthtimeMs > 0) return st.birthtimeMs;
+      if (st.mtimeMs && st.mtimeMs > 0) return st.mtimeMs;
+    } catch (e) {
+      // 忽略无法读取的项，按时间为 0 处理
+    }
+    return 0;
+  }
+
+  /**
+   * 按创建时间从新到旧排序名称数组（创建时间相同则按名称自然排序）
+   * @private
+   * @param {string} baseDir - 名称所在目录
+   * @param {string[]} names - 待排序的名称数组
+   * @returns {Promise<string[]>} 排序后的新数组（不修改入参）
+   */
+  private async sortByCreationDesc(
+    baseDir: string,
+    names: string[]
+  ): Promise<string[]> {
+    const withTime = await Promise.all(
+      names.map(async (name) => ({
+        name,
+        time: await this.getCreationTimeMs(path.join(baseDir, name)),
+      }))
+    );
+    withTime.sort((a, b) => {
+      if (b.time !== a.time) return b.time - a.time;
+      return this.naturalSort(a.name, b.name);
+    });
+    return withTime.map((item) => item.name);
+  }
+
+  /**
+   * 按创建时间从新到旧排序目录项（Dirent）数组（创建时间相同则按名称自然排序）
+   * @private
+   * @param {string} baseDir - 目录项所在目录
+   * @param {Dirent[]} dirents - 待排序的目录项数组
+   * @returns {Promise<Dirent[]>} 排序后的新数组（不修改入参）
+   */
+  private async sortDirentsByCreationDesc(
+    baseDir: string,
+    dirents: Dirent[]
+  ): Promise<Dirent[]> {
+    const withTime = await Promise.all(
+      dirents.map(async (dirent) => ({
+        dirent,
+        time: await this.getCreationTimeMs(path.join(baseDir, dirent.name)),
+      }))
+    );
+    withTime.sort((a, b) => {
+      if (b.time !== a.time) return b.time - a.time;
+      return this.naturalSort(a.dirent.name, b.dirent.name);
+    });
+    return withTime.map((item) => item.dirent);
+  }
+
+  /**
    * 检查目标路径是否在基础路径范围内，防止路径遍历攻击
    * @static
    * @param {string} base - 基础路径
@@ -172,7 +239,10 @@ export class VideoController {
       });
       const names = dirents.map((d) => d.name);
 
-      const folderDirs = dirents.filter((d) => d.isDirectory());
+      const folderDirs = await this.sortDirentsByCreationDesc(
+        this.videoFolder,
+        dirents.filter((d) => d.isDirectory())
+      );
       const imageExts = mime.getImageExtensions();
       const ignoreExts = new Set([
         "torrent",
@@ -250,9 +320,12 @@ export class VideoController {
 
       const supportedExts = mime.getSupportedExtensions();
 
-      names.sort((a, b) => this.naturalSort(a, b));
+      const sortedNames = await this.sortByCreationDesc(
+        this.videoFolder,
+        names
+      );
 
-      let videoFilesHtml = names
+      let videoFilesHtml = sortedNames
         .filter((file) => {
           const fileExt = path.extname(file).toLowerCase().replace(/^\./, "");
           return supportedExts.includes(fileExt);
@@ -539,7 +612,10 @@ export class VideoController {
         `【getFolderList】 列出目录 ${targetPath}，项数 ${dirents.length}`
       );
 
-      const folderDirs = dirents.filter((d) => d.isDirectory());
+      const folderDirs = await this.sortDirentsByCreationDesc(
+        targetPath,
+        dirents.filter((d) => d.isDirectory())
+      );
       const imageExts = mime.getImageExtensions();
       const ignoreExts = new Set([
         "torrent",
@@ -612,14 +688,19 @@ export class VideoController {
 
       let folderItemsHtml = folderItemsArr.join("");
 
-      let videoFilesHtml = dirents
+      const fileNames = dirents
         .filter((d) => d.isFile())
         .map((d) => d.name)
         .filter((file) => {
           const fileExt = path.extname(file).toLowerCase().replace(/^\./, "");
           return mime.getSupportedExtensions().includes(fileExt);
-        })
-        .sort((a, b) => this.naturalSort(a, b))
+        });
+      const sortedFileNames = await this.sortByCreationDesc(
+        targetPath,
+        fileNames
+      );
+
+      let videoFilesHtml = sortedFileNames
         .map((file) => {
           const rel = path.posix.join(subPath, file).replace(/\\/g, "/");
           const fileExt = path.extname(file).toLowerCase().replace(/^\./, "");
@@ -723,14 +804,14 @@ export class VideoController {
 
       if (stat.isDirectory()) {
         const dirents = await fs.readdir(targetPath, { withFileTypes: true });
-        const imgs = dirents
+        const imgNames = dirents
           .filter((d) => d.isFile())
           .map((d) => d.name)
           .filter((file) => {
             const ext = path.extname(file).toLowerCase().replace(/^\./, "");
             return mime.getImageExtensions().includes(ext);
-          })
-          .sort((a, b) => this.naturalSort(a, b));
+          });
+        const imgs = await this.sortByCreationDesc(targetPath, imgNames);
 
         images = imgs.map((f) => {
           const rel = path.posix.join(subPath, f).replace(/\\/g, "/");
@@ -750,14 +831,14 @@ export class VideoController {
 
         const parent = path.dirname(targetPath);
         const dirents = await fs.readdir(parent, { withFileTypes: true });
-        const imgs = dirents
+        const imgNames = dirents
           .filter((d) => d.isFile())
           .map((d) => d.name)
           .filter((file) => {
             const ext = path.extname(file).toLowerCase().replace(/^\./, "");
             return mime.getImageExtensions().includes(ext);
-          })
-          .sort((a, b) => this.naturalSort(a, b));
+          });
+        const imgs = await this.sortByCreationDesc(parent, imgNames);
 
         const fileName = path.basename(targetPath);
         const relBase = path.posix
@@ -824,15 +905,15 @@ export class VideoController {
       if (stat.isDirectory()) {
         const dirents = await fs.readdir(targetPath, { withFileTypes: true });
         const audioExts = mime.getAudioExtensions();
-        const items = dirents
+        const itemNames = dirents
           .filter((d) => d.isFile())
           .map((d) => d.name)
           .filter((file) =>
             audioExts.includes(
               path.extname(file).toLowerCase().replace(/^\./, "")
             )
-          )
-          .sort((a, b) => this.naturalSort(a, b));
+          );
+        const items = await this.sortByCreationDesc(targetPath, itemNames);
 
         audios = items.map((f) => {
           const rel = path.posix.join(subPath, f).replace(/\\/g, "/");
@@ -853,15 +934,15 @@ export class VideoController {
         const parent = path.dirname(targetPath);
         const dirents = await fs.readdir(parent, { withFileTypes: true });
         const audioExts = mime.getAudioExtensions();
-        const items = dirents
+        const itemNames = dirents
           .filter((d) => d.isFile())
           .map((d) => d.name)
           .filter((file) =>
             audioExts.includes(
               path.extname(file).toLowerCase().replace(/^\./, "")
             )
-          )
-          .sort((a, b) => this.naturalSort(a, b));
+          );
+        const items = await this.sortByCreationDesc(parent, itemNames);
 
         const fileName = path.basename(targetPath);
         const relBase = path.posix

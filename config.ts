@@ -12,7 +12,7 @@ export const PORT: number = 3000;
  * 支持多个视频存储路径，优先使用数组的第一个作为默认目录
  * @type {string[]}
  */
-export const VIDEO_FOLDERS: string[] = ['D:\\迅雷下载'];
+export const VIDEO_FOLDERS: string[] = ["F:\\video"];
 
 /**
  * 向后兼容：默认视频文件夹，等于 `VIDEO_FOLDERS[0]`
