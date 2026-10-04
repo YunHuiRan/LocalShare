@@ -29,6 +29,23 @@ export class VideoController {
     this.videoFolder = videoFolders[0];
   }
 
+  /**
+   * 在运行时更新共享的根目录
+   *
+   * 供程序启动时通过“选择文件夹”窗口动态指定目录后调用；
+   * 传入空数组时保持不变。
+   *
+   * @param {string[]} videoFolders - 新的共享根目录列表
+   */
+  public setVideoFolders(videoFolders: string[]): void {
+    if (!Array.isArray(videoFolders) || videoFolders.length === 0) return;
+    this.videoFolders = videoFolders;
+    this.videoFolder = videoFolders[0];
+    logger.info(
+      `【setVideoFolders】 共享目录已更新: ${JSON.stringify(videoFolders)}`
+    );
+  }
+
   private getRootName(folderPath: string): string {
     return path.basename(folderPath) || folderPath;
   }

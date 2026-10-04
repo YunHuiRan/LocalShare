@@ -5,7 +5,13 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "dev": "npx tsx app.ts",
-    "build:exe": "tsc && pkg dist/app.js --targets node18-win-x64 --output video-server.exe"
+    "copy:views": "node -e \"require('fs').cpSync('views','dist/views',{recursive:true})\"",
+    "build:exe": "tsc && npm run copy:views && pkg dist/app.js --config package.json --targets node18-win-x64 --output dist/LocalShare.exe"
+  },
+  "pkg": {
+    "assets": [
+      "dist/views/**/*"
+    ]
   },
   "devDependencies": {
     "@types/compression": "^1.8.1",
