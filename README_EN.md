@@ -34,10 +34,10 @@
 
 **The approach**: your phone and PC are usually on the same Wi-Fi, so just run an HTTP server on the PC and use the browser as the player. That leads to three "zero" goals:
 
-| Goal | How it is achieved |
-| --- | --- |
-| **Zero install** | Packaged as a single-file exe; the target machine needs no Node.js, no database and no runtime |
-| **Zero upload** | Files stay on the LAN; the server streams the original files straight from disk — no transcoding, no copies |
+| Goal                    | How it is achieved                                                                                                                             |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Zero install**        | Packaged as a single-file exe; the target machine needs no Node.js, no database and no runtime                                                 |
+| **Zero upload**         | Files stay on the LAN; the server streams the original files straight from disk — no transcoding, no copies                                    |
 | **Zero learning curve** | Double-click → pick a folder → the console prints the URL; just type it into the phone's browser. Video / comics / music share one entry point |
 
 ## 2. Features
@@ -66,20 +66,20 @@
 - **Caching and conditional requests**: `ETag` / `Last-Modified` (answered with `304` on a hit), `Cache-Control: max-age=86400` for images and `60` for everything else, plus a 5-second in-memory cache for the home page HTML.
 - **Smart gzip bypass**: compression is disabled for `/video/`, `/watch/` and any request carrying a `Range` header, so media streams are never corrupted.
 - **Levelled logging**: `debug / info / warn / error`, including request duration and user agent, controlled by the `LOG_LEVEL` environment variable.
-- **Bilingual console**: the system language is detected at start-up (`LOCALSHARE_LANG` > `LC_ALL` / `LANG` > ICU locale); non-Chinese systems get English logs automatically, Chinese systems keep the original wording.
+- **Bilingual console & UI**: the system language is detected at start-up (`LOCALSHARE_LANG` > `LC_ALL` / `LANG` > ICU locale); on non-Chinese systems both the web pages (titles, buttons, cards, error messages) and the console logs switch to English, Chinese systems keep the original wording.
 
 ## 3. Tech Stack
 
-| Area | Choice | Notes |
-| --- | --- | --- |
-| Language | TypeScript 5.9 | `strict`, `target: ES2022`, `module: NodeNext` |
-| Runtime | Node.js 18+ | pkg target `node18-win-x64` |
-| Web framework | Express 5 | Routing + middleware |
-| Middleware | `cors`, `compression` | CORS and gzip (bypassed for media streams) |
-| Front end | Plain HTML / JS | No framework, no build step; TailwindCSS CDN + Font Awesome |
-| Dev tooling | `tsx` | Runs `.ts` directly, no pre-compilation |
-| Packaging | `pkg` | Single-file exe with `views/*.html` embedded via `pkg.assets` |
-| Testing | — | No automated tests yet (see "Future Work") |
+| Area          | Choice                | Notes                                                         |
+| ------------- | --------------------- | ------------------------------------------------------------- |
+| Language      | TypeScript 5.9        | `strict`, `target: ES2022`, `module: NodeNext`                |
+| Runtime       | Node.js 18+           | pkg target `node18-win-x64`                                   |
+| Web framework | Express 5             | Routing + middleware                                          |
+| Middleware    | `cors`, `compression` | CORS and gzip (bypassed for media streams)                    |
+| Front end     | Plain HTML / JS       | No framework, no build step; TailwindCSS CDN + Font Awesome   |
+| Dev tooling   | `tsx`                 | Runs `.ts` directly, no pre-compilation                       |
+| Packaging     | `pkg`                 | Single-file exe with `views/*.html` embedded via `pkg.assets` |
+| Testing       | —                     | No automated tests yet (see "Future Work")                    |
 
 ## 4. Architecture
 
@@ -148,10 +148,10 @@ LocalShare/
 │  ├─ shareFolders.ts         # Share folder resolution (CLI / env / dialog / default)
 │  ├─ folderPicker.ts         # Native "Select Folder" dialog via PowerShell
 │  ├─ logger.ts               # Levelled logging
-│  ├─ i18n.ts                 # Console language detection and zh/en messages
+│  ├─ i18n.ts                 # Language detection + zh/en logs & page text
 │  └─ file.ts                 # File existence, video file enumeration
 ├─ views/
-│  ├─ baseTemplate.html       # Home / folder page template ({{videoItems}} placeholders)
+│  ├─ baseTemplate.html       # Home / folder template ({{videoItems}} + {{t:中文|English}})
 │  ├─ video.html              # Video player page
 │  ├─ comic.html              # Comic reader page
 │  └─ audio.html              # Audio player page
@@ -215,12 +215,12 @@ LocalShare.exe
 LocalShare.exe
 ```
 
-| Environment variable | Purpose |
-| --- | --- |
-| `SHARE_DIR` / `SHARE_DIRS` | Share folders, separated by `;` |
-| `NO_PICKER=1` | Skip the folder-picking dialog |
-| `LOG_LEVEL` | Log level: `debug` (default) / `info` / `warn` / `error` |
-| `LOCALSHARE_LANG` | Force the console language: `zh` / `en`; when unset it is auto-detected from the system language (alias: `LOCALSHARE_LANGUAGE`) |
+| Environment variable       | Purpose                                                                                                                                |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `SHARE_DIR` / `SHARE_DIRS` | Share folders, separated by `;`                                                                                                        |
+| `NO_PICKER=1`              | Skip the folder-picking dialog                                                                                                         |
+| `LOG_LEVEL`                | Log level: `debug` (default) / `info` / `warn` / `error`                                                                               |
+| `LOCALSHARE_LANG`          | Force the UI and console language: `zh` / `en`; when unset it is auto-detected from the system language (alias: `LOCALSHARE_LANGUAGE`) |
 
 The default port and default share folders live in `config.ts`:
 
@@ -233,14 +233,14 @@ export const VIDEO_FOLDERS: string[] = ["F:\\video"]; // multiple roots supporte
 
 All routes are `GET`. File and folder names in paths are `encodeURIComponent`-encoded by the client and `decodeURIComponent`-decoded by the server, so non-ASCII characters, spaces and `#` are handled safely.
 
-| Route | Handler | Description |
-| --- | --- | --- |
-| `GET /` | `getVideoList` | Home page. Single root: lists that folder; multiple roots: lists the root entries. 5-second in-memory cache |
-| `GET /folder/*` | `getFolderList` | Folder browsing page with breadcrumbs, folder cards (image-only folders get a cover) and file cards |
-| `GET /watch/*` | `watch` | Video player page (inline `<video>`); redirects (302) to the matching page for folders, images and audio |
-| `GET /video/*` | `streamVideo` | **Media stream.** Supports `Range` (206) and conditional requests (304); shared by images, audio and video |
-| `GET /comic/*` | `comicViewer` | Comic reader: a folder becomes a full image collection; a single image opens its folder as a collection starting at that page |
-| `GET /audio/*` | `audioPlayer` | Audio player: a folder becomes a playlist; a single track opens its folder as a playlist starting at that track |
+| Route           | Handler         | Description                                                                                                                   |
+| --------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `GET /`         | `getVideoList`  | Home page. Single root: lists that folder; multiple roots: lists the root entries. 5-second in-memory cache                   |
+| `GET /folder/*` | `getFolderList` | Folder browsing page with breadcrumbs, folder cards (image-only folders get a cover) and file cards                           |
+| `GET /watch/*`  | `watch`         | Video player page (inline `<video>`); redirects (302) to the matching page for folders, images and audio                      |
+| `GET /video/*`  | `streamVideo`   | **Media stream.** Supports `Range` (206) and conditional requests (304); shared by images, audio and video                    |
+| `GET /comic/*`  | `comicViewer`   | Comic reader: a folder becomes a full image collection; a single image opens its folder as a collection starting at that page |
+| `GET /audio/*`  | `audioPlayer`   | Audio player: a folder becomes a playlist; a single track opens its folder as a playlist starting at that track               |
 
 **Convention**: `/video/` serves more than video — comic images and audio reuse it, so a single streaming implementation provides both range support and caching to every player.
 
@@ -253,8 +253,6 @@ All routes are `GET`. File and folder names in paths are `encodeURIComponent`-en
 ```
 
 ## 9. Key Implementation Details
-
-> This is the section to expand on in an interview.
 
 ### 9.1 HTTP Range streaming (instant start, seekable video)
 
@@ -322,29 +320,38 @@ Newly added media is usually what you want to watch, so lists are sorted by `bir
 - the startup banner is delayed by 300ms, working around Windows emitting `listening` before `error` (which would otherwise advertise a port that is not really in use);
 - when launched by double-click and exiting with an error, `pauseBeforeExit()` runs `pause` only if `stdin` is a TTY so the window does not vanish; scripts and pipes exit immediately and are never blocked.
 
-### 9.10 Automatic console language detection
+### 9.10 Automatic UI and console language detection
 
-`utils/i18n.ts` performs a single language probe when the module is loaded, after which every log line is produced through `t("中文", "English")`:
+`utils/i18n.ts` performs a single language probe when the module is loaded, after which every log line and every page string is produced through the same `t("中文", "English")` call:
 
 1. `LOCALSHARE_LANG` / `LOCALSHARE_LANGUAGE` (explicit override for demos and troubleshooting);
 2. `LC_ALL` / `LC_MESSAGES` / `LANG` / `LANGUAGE` (the usual source on Linux / macOS);
 3. `Intl.DateTimeFormat().resolvedOptions().locale` (on Windows this comes from the system regional settings);
 4. when nothing can be determined, Chinese is kept, matching the historical behaviour.
 
-Language tags are normalised to their primary subtag (`zh_CN.UTF-8` → `zh`, `en-US` → `en`), `POSIX` / `C` count as unspecified, and anything that is not `zh` falls back to English. The log-level labels switch as well (`[信息]` / `[INFO]`). Because both variants live at the call site there is no key/value table to maintain and no message can silently stay untranslated; a single line printed at start-up also reports the detected language.
+Language tags are normalised to their primary subtag (`zh_CN.UTF-8` → `zh`, `en-US` → `en`), `POSIX` / `C` count as unspecified, and anything that is not `zh` falls back to English. The log-level labels switch as well (`[信息]` / `[INFO]`).
+
+Page text is localised in two places so that a non-Chinese system gets an entirely English UI:
+
+| Location                                                     | How                    | Coverage                                                                                                                                            |
+| ------------------------------------------------------------ | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| HTML fragments and HTTP error bodies built in the controller | `t("中文", "English")` | card subtitles (`根目录 · …` / `漫画 · N 页` / `文件夹`), the “Home” breadcrumb, the multi-root page title, `res.status(404).send(...)` and friends |
+| `views/*.html` templates                                     | `{{t:中文              | English}}`                                                                                                                                          | the “Refresh” link, the audio player button tooltips and `aria-label`s, the playlist heading and the empty-state text |
+
+`localizeTemplate()` rewrites those tokens in all four render entry points and also syncs `<html lang="zh-CN">` to the active language. The token pass runs before `{{videoItems}}` / `{{title}}` placeholders are substituted, so a user folder name can never be mistaken for a token. Because both variants live at the call site there is no key/value table to maintain and no message can silently stay untranslated; a single line printed at start-up also reports the detected language.
 
 ## 10. Performance & Reliability
 
-| Concern | Measure |
-| --- | --- |
-| Large file transfer | Streaming reads + range requests keep memory usage independent of file size |
-| Redundant transfer | `ETag` / `Last-Modified` / `304` plus type-aware `Cache-Control` |
-| Home page cost | 5-second in-process HTML cache, so disk reads are independent of traffic |
-| Compression cost | Media streams and range requests skip gzip, avoiding wasted CPU and corrupted streams |
-| Comic page turns | Adjacent pages are preloaded on the client, so turning a page is almost instant |
-| Audio resume | Per-track `localStorage` progress, resume after switching tracks or reloading |
-| Screen sleep | A Screen Wake Lock is requested while playing and re-acquired when the page becomes visible |
-| Observability | Every request logs method, URL, status, duration and user agent; log level is configurable |
+| Concern             | Measure                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| Large file transfer | Streaming reads + range requests keep memory usage independent of file size                 |
+| Redundant transfer  | `ETag` / `Last-Modified` / `304` plus type-aware `Cache-Control`                            |
+| Home page cost      | 5-second in-process HTML cache, so disk reads are independent of traffic                    |
+| Compression cost    | Media streams and range requests skip gzip, avoiding wasted CPU and corrupted streams       |
+| Comic page turns    | Adjacent pages are preloaded on the client, so turning a page is almost instant             |
+| Audio resume        | Per-track `localStorage` progress, resume after switching tracks or reloading               |
+| Screen sleep        | A Screen Wake Lock is requested while playing and re-acquired when the page becomes visible |
+| Observability       | Every request logs method, URL, status, duration and user agent; log level is configurable  |
 
 ## 11. Future Work
 
@@ -363,13 +370,3 @@ Language tags are normalised to their primary subtag (`zh_CN.UTF-8` → `zh`, `e
 - **Commits**: follow the `feat: / fix: / chore:` prefix convention (see `git log`).
 
 ---
-
-## About
-
-- Repository: <https://github.com/YunHuiRan/LocalShare>
-- Scope: a personal LAN media sharing tool and a hands-on TypeScript + Express project covering routing and middleware, HTTP streaming with cache negotiation, cross-device (mobile browser) adaptation and single-file `pkg` distribution.
-- Every capability described in this README maps to code in `app.ts`, `controllers/videoController.ts`, `utils/*` and `views/*`.
-
-
-
-

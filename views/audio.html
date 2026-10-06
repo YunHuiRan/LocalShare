@@ -34,7 +34,7 @@
               <div
                 id="progressArea"
                 class="relative h-3 bg-gray-200 rounded overflow-hidden cursor-pointer"
-                aria-label="进度条"
+                aria-label="{{t:进度条|Progress bar}}"
               >
                 <!-- 进度条已播放部分 -->
                 <div
@@ -56,7 +56,7 @@
               <!-- 上一首按钮 -->
               <button
                 id="prev"
-                title="上一首"
+                title="{{t:上一首|Previous track}}"
                 class="p-2 rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300 transition ease-in-out"
               >
                 <
@@ -65,7 +65,7 @@
               <!-- 播放/暂停按钮 -->
               <button
                 id="playPause"
-                title="播放/暂停"
+                title="{{t:播放/暂停|Play / Pause}}"
                 class="p-2 rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300 transition ease-in-out"
               >
                 <!-- 播放图标 -->
@@ -91,7 +91,7 @@
               <!-- 下一首按钮 -->
               <button
                 id="next"
-                title="下一首"
+                title="{{t:下一首|Next track}}"
                 class="p-2 rounded-full bg-gray-200 text-gray-600 hover:bg-gray-300 transition ease-in-out"
               >
                 >
@@ -104,7 +104,7 @@
         <div class="md:col-span-1 p-4">
           <!-- 播放列表标题 -->
           <div class="flex items-center justify-between mb-4">
-            <div class="text-sm text-gray-600">播放列表</div>
+            <div class="text-sm text-gray-600">{{t:播放列表|Playlist}}</div>
           </div>
           <!-- 播放列表容器 -->
           <div id="playlist" class="overflow-auto max-h-[60vh] p-2"></div>
@@ -395,7 +395,7 @@
           loadIndex(idx, false);
         } else {
           playlistEl.innerHTML =
-            '<div class="text-gray-500 p-4">未找到音频文件</div>';
+            '<div class="text-gray-500 p-4">{{t:未找到音频文件|No audio files found}}</div>';
         }
       } catch (e) {}
     </script>

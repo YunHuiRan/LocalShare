@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { logger } from "./logger";
-import { t } from "./i18n";
+import { localizeTemplate, t } from "./i18n";
 
 const baseDir = typeof __dirname !== "undefined" ? __dirname : process.cwd();
 
@@ -94,7 +94,8 @@ class TemplateRenderer {
     folderItems: string,
     breadcrumb: string
   ): Promise<string> {
-    let html: string = await this.loadTemplate();
+    // 先本地化模板（{{t:中文|English}} 标记 + <html lang>），再替换业务占位符
+    let html: string = localizeTemplate(await this.loadTemplate());
 
     html = html.replace("{{videoItems}}", videoItems);
     html = html.replace("{{folderPath}}", folderPath);
@@ -130,7 +131,7 @@ class TemplateRenderer {
             `[template] trying comic template: ${p}`
           )
         );
-        let content = await fs.readFile(p, "utf-8");
+        let content = localizeTemplate(await fs.readFile(p, "utf-8"));
         const escaped = imagesJson.replace(/\\/g, "\\\\").replace(/\"/g, '\\"');
         content = content.replace("{{imagesJson}}", escaped);
         content = content.replace(
@@ -185,7 +186,7 @@ class TemplateRenderer {
             `[template] trying audio template: ${p}`
           )
         );
-        let content = await fs.readFile(p, "utf-8");
+        let content = localizeTemplate(await fs.readFile(p, "utf-8"));
         const escaped = audioJson.replace(/\\/g, "\\\\").replace(/\"/g, '\\"');
         content = content.replace("{{audioJson}}", escaped);
         content = content.replace(
@@ -235,7 +236,7 @@ class TemplateRenderer {
             `[template] trying video template: ${p}`
           )
         );
-        let content = await fs.readFile(p, "utf-8");
+        let content = localizeTemplate(await fs.readFile(p, "utf-8"));
         content = content.replace("{{videoSrc}}", videoSrc);
         content = content.replace("{{title}}", title);
         return content;

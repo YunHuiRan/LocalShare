@@ -1,15 +1,20 @@
 /**
- * 控制台文案国际化
+ * 中英文文案国际化
  *
- * 程序启动时检测系统语言，决定控制台输出中文还是英文：
- * - 检测结果以 `zh` 开头（zh、zh-CN、zh-TW……）→ 输出中文；
- * - 其他语言（en-US、ja-JP、de-DE……）→ 输出英文。
+ * 程序启动时检测系统语言，决定控制台输出与页面界面使用中文还是英文：
+ * - 检测结果以 `zh` 开头（zh、zh-CN、zh-TW……）→ 中文；
+ * - 其他语言（en-US、ja-JP、de-DE……）→ 英文。
  *
  * 检测优先级：
  * 1. 环境变量 `LOCALSHARE_LANG`（显式指定，便于测试或强制切换，如 `set LOCALSHARE_LANG=en`）
  * 2. 环境变量 `LC_ALL` / `LC_MESSAGES` / `LANG` / `LANGUAGE`（Linux / macOS 上常见）
  * 3. `Intl.DateTimeFormat().resolvedOptions().locale`（Windows 上取自系统区域设置）
  * 4. 全部无法判定时保持中文，与历史行为一致
+ *
+ * 三处使用方式：
+ * - 控制台日志：`t("中文", "English")`；
+ * - 控制器里拼出的 HTML 片段：同样使用 `t("中文", "English")`；
+ * - `views/*.html` 模板：写 `{{t:中文|English}}`，渲染时由 `localizeTemplate()` 替换。
  */
 
 /**
@@ -90,4 +95,39 @@ export const language: Language =
  */
 export function t(zh: string, en: string): string {
   return language === "en" ? en : zh;
+}
+
+/**
+ * 当前语言对应的 HTML `lang` 属性值，写入每个页面的 <html lang="...">
+ * @type {string}
+ */
+export const htmlLang: string = language === "zh" ? "zh-CN" : "en";
+
+/**
+ * 页面模板中的双语标记，写法为 `{{t:中文|English}}`
+ *
+ * 中英文案中不能出现 `{`、`}`、`|` 三个字符。
+ * @type {RegExp}
+ */
+const I18N_TOKEN_PATTERN = /\{\{t:([^{}|]*)\|([^{}|]*)\}\}/g;
+
+/**
+ * 本地化页面模板内容
+ *
+ * 做两件事：
+ * 1. 把 `{{t:中文|English}}` 标记替换为当前语言的文案（页面静态文字与内联脚本中的提示文字都可使用）；
+ * 2. 同步 `<html lang="...">`，让浏览器按对应语言渲染与断词。
+ *
+ * 注意：必须在替换 `{{videoItems}}` / `{{title}}` 等占位符之前调用，
+ * 避免用户目录名里恰好出现相同写法时被误当成双语标记。
+ *
+ * @param {string} html - 模板原始内容
+ * @returns {string} 本地化后的 HTML
+ */
+export function localizeTemplate(html: string): string {
+  return String(html)
+    .replace(I18N_TOKEN_PATTERN, (_match, zh: string, en: string) =>
+      language === "en" ? en : zh
+    )
+    .replace(/<html lang="[^"]*"/i, `<html lang="${htmlLang}"`);
 }

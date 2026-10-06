@@ -250,7 +250,7 @@ export class VideoController {
               <i class="fa fa-folder text-3xl text-yellow-500"></i>
               <div class="truncate">
                 <div class="font-medium">${name}</div>
-                <div class="text-xs text-gray-500 truncate">根目录 · ${f}</div>
+                <div class="text-xs text-gray-500 truncate">${t(`根目录 · ${f}`, `Root folder · ${f}`)}</div>
               </div>
             </div>
           </a>
@@ -258,7 +258,7 @@ export class VideoController {
         });
 
         const folderItemsHtml = folderItemsArr.join("");
-        const html = await templateRenderer.renderVideoListPage("", "根目录", folderItemsHtml, `<a href=\"/\" class=\"text-blue-600 hover:underline\">Home</a>`);
+        const html = await templateRenderer.renderVideoListPage("", t("根目录", "Root folders"), folderItemsHtml, `<a href=\"/\" class=\"text-blue-600 hover:underline\">${t("首页", "Home")}</a>`);
         res.send(html);
         logger.debug(
           t(
@@ -329,7 +329,7 @@ export class VideoController {
             </div>
             <div class="p-3">
               <div class="font-medium truncate">${name}</div>
-              <div class="text-xs text-gray-500 truncate">漫画 · ${files.length} 页</div>
+              <div class="text-xs text-gray-500 truncate">${t(`漫画 · ${files.length} 页`, `Comic · ${files.length} pages`)}</div>
             </div>
           </a>
         `;
@@ -343,7 +343,7 @@ export class VideoController {
               <i class="fa fa-folder text-3xl text-yellow-500"></i>
               <div class="truncate">
                 <div class="font-medium">${name}</div>
-                <div class="text-xs text-gray-500 truncate">文件夹</div>
+                <div class="text-xs text-gray-500 truncate">${t("文件夹", "Folder")}</div>
               </div>
             </div>
           </a>
@@ -412,7 +412,7 @@ export class VideoController {
         videoFilesHtml = moved;
       }
 
-      const breadcrumb = `<a href="/" class="text-blue-600 hover:underline">Home</a> <span class="text-gray-400">/</span> <span class="text-gray-600">${path.basename(
+      const breadcrumb = `<a href="/" class="text-blue-600 hover:underline">${t("首页", "Home")}</a> <span class="text-gray-400">/</span> <span class="text-gray-600">${path.basename(
         this.videoFolder
       )}</span>`;
 
@@ -442,7 +442,7 @@ export class VideoController {
         t("【getVideoList】 失败", "[getVideoList] failed"),
         err as unknown
       );
-      res.status(500).send("无法读取视频目录");
+      res.status(500).send(t("无法读取视频目录", "Unable to read the video folder"));
     }
   }
 
@@ -473,7 +473,7 @@ export class VideoController {
             `[streamVideo] unknown root or path: ${filename}`
           )
         );
-        res.status(404).send("视频文件未找到");
+        res.status(404).send(t("视频文件未找到", "Video file not found"));
         return;
       }
       const videoPath = path.join(resolved.base, resolved.relPath);
@@ -485,7 +485,7 @@ export class VideoController {
             `[streamVideo] path escapes the share root: ${videoPath}`
           )
         );
-        res.status(403).send("禁止访问");
+        res.status(403).send(t("禁止访问", "Forbidden"));
         return;
       }
 
@@ -634,7 +634,7 @@ export class VideoController {
         t("【streamVideo】 失败", "[streamVideo] failed"),
         err as unknown
       );
-      res.status(404).send("视频文件未找到");
+      res.status(404).send(t("视频文件未找到", "Video file not found"));
     }
   }
 
@@ -658,7 +658,7 @@ export class VideoController {
             `[watch] unknown root or path: ${filename}`
           )
         );
-        res.status(404).send("资源未找到");
+        res.status(404).send(t("资源未找到", "Resource not found"));
         return;
       }
       const videoPath = path.join(resolved.base, resolved.relPath);
@@ -670,7 +670,7 @@ export class VideoController {
             `[watch] path escapes the share root: ${videoPath}`
           )
         );
-        res.status(403).send("禁止访问");
+        res.status(403).send(t("禁止访问", "Forbidden"));
         return;
       }
 
@@ -705,7 +705,7 @@ export class VideoController {
         t("【watch】 失败", "[watch] failed"),
         err as unknown
       );
-      res.status(404).send("资源未找到");
+      res.status(404).send(t("资源未找到", "Resource not found"));
     }
   }
 
@@ -722,13 +722,13 @@ export class VideoController {
       const subPath = decodeURIComponent(String(rawPath || ""));
       const resolved = await this.asyncResolveBaseAndRel(subPath);
       if (!resolved) {
-        res.status(404).send("未找到目录");
+        res.status(404).send(t("未找到目录", "Folder not found"));
         return;
       }
       const targetPath = path.join(resolved.base, resolved.relPath);
 
       if (!VideoController.isPathSafe(resolved.base, targetPath)) {
-        res.status(403).send("禁止访问");
+        res.status(403).send(t("禁止访问", "Forbidden"));
         return;
       }
 
@@ -794,7 +794,7 @@ export class VideoController {
             </div>
             <div class="p-3">
               <div class="font-medium truncate">${name}</div>
-              <div class="text-xs text-gray-500 truncate">漫画 · ${files.length} 页</div>
+              <div class="text-xs text-gray-500 truncate">${t(`漫画 · ${files.length} 页`, `Comic · ${files.length} pages`)}</div>
             </div>
           </a>
         `;
@@ -806,7 +806,7 @@ export class VideoController {
               <i class="fa fa-folder text-3xl text-yellow-500"></i>
               <div class="truncate">
                 <div class="font-medium">${name}</div>
-                <div class="text-xs text-gray-500 truncate">文件夹</div>
+                <div class="text-xs text-gray-500 truncate">${t("文件夹", "Folder")}</div>
               </div>
             </div>
           </a>
@@ -878,7 +878,7 @@ export class VideoController {
       }
 
       const parts = subPath ? subPath.split(/[\\/]+/) : [];
-      let breadcrumb = `<a href="/" class="text-blue-600 hover:underline">Home</a>`;
+      let breadcrumb = `<a href="/" class="text-blue-600 hover:underline">${t("首页", "Home")}</a>`;
       let acc = "";
       for (let i = 0; i < parts.length; i++) {
         acc = acc ? path.posix.join(acc, parts[i]) : parts[i];
@@ -906,7 +906,7 @@ export class VideoController {
         t("【getFolderList】 失败", "[getFolderList] failed"),
         err as unknown
       );
-      res.status(500).send("无法读取目录");
+      res.status(500).send(t("无法读取目录", "Unable to read the folder"));
     }
   }
 
@@ -923,19 +923,19 @@ export class VideoController {
       const subPath = decodeURIComponent(String(rawPath || ""));
       const resolved = await this.asyncResolveBaseAndRel(subPath);
       if (!resolved) {
-        res.status(404).send("资源未找到");
+        res.status(404).send(t("资源未找到", "Resource not found"));
         return;
       }
       const targetPath = path.join(resolved.base, resolved.relPath);
 
       if (!VideoController.isPathSafe(resolved.base, targetPath)) {
-        res.status(403).send("禁止访问");
+        res.status(403).send(t("禁止访问", "Forbidden"));
         return;
       }
 
       const stat = await fs.stat(targetPath);
       let images: string[] = [];
-      let title = "漫画阅读";
+      let title = t("漫画阅读", "Comic Reader");
       let startIndex = 0;
 
       if (stat.isDirectory()) {
@@ -993,7 +993,7 @@ export class VideoController {
       }
 
       if (!images || images.length === 0) {
-        res.status(404).send("未找到图片");
+        res.status(404).send(t("未找到图片", "No images found"));
         return;
       }
 
@@ -1014,7 +1014,7 @@ export class VideoController {
         t("【comicViewer】 失败", "[comicViewer] failed"),
         err as unknown
       );
-      res.status(404).send("漫画资源未找到");
+      res.status(404).send(t("漫画资源未找到", "Comic resource not found"));
     }
   }
 
@@ -1031,19 +1031,19 @@ export class VideoController {
       const subPath = decodeURIComponent(String(rawPath || ""));
       const resolved = await this.asyncResolveBaseAndRel(subPath);
       if (!resolved) {
-        res.status(404).send("音频资源未找到");
+        res.status(404).send(t("音频资源未找到", "Audio resource not found"));
         return;
       }
       const targetPath = path.join(resolved.base, resolved.relPath);
 
       if (!VideoController.isPathSafe(resolved.base, targetPath)) {
-        res.status(403).send("禁止访问");
+        res.status(403).send(t("禁止访问", "Forbidden"));
         return;
       }
 
       const stat = await fs.stat(targetPath);
       let audios: string[] = [];
-      let title = "音频播放";
+      let title = t("音频播放", "Audio Player");
       let startIndex = 0;
 
       if (stat.isDirectory()) {
@@ -1106,7 +1106,7 @@ export class VideoController {
       }
 
       if (!audios || audios.length === 0) {
-        res.status(404).send("未找到音频文件");
+        res.status(404).send(t("未找到音频文件", "No audio files found"));
         return;
       }
 
@@ -1127,7 +1127,7 @@ export class VideoController {
         t("【audioPlayer】 失败", "[audioPlayer] failed"),
         err as unknown
       );
-      res.status(404).send("音频资源未找到");
+      res.status(404).send(t("音频资源未找到", "Audio resource not found"));
     }
   }
 }
