@@ -1,13 +1,10 @@
 /**
  * MIME 类型管理器
  * 负责处理文件扩展名与 MIME 类型之间的映射关系
+ *
+ * MIME type manager mapping file extensions to MIME types.
  */
 class Mime {
-  /**
-   * MIME 类型映射表
-   * @private
-   * @type {Record<string, string>}
-   */
   private mimeMap: Record<string, string> = {
     // video
     mp4: "video/mp4",
@@ -47,8 +44,9 @@ class Mime {
 
   /**
    * 根据文件名获取对应的 MIME 类型
-   * @param {string} filename - 文件名
-   * @returns {string} 对应的 MIME 类型，如果未找到则返回 "application/octet-stream"
+   *
+   * Resolves the MIME type of a file name; unknown extensions fall back to
+   * "application/octet-stream".
    */
   public getMimeType(filename: string): string {
     const fileExtension = filename.split(".").pop()?.toLowerCase() || "";
@@ -57,7 +55,8 @@ class Mime {
 
   /**
    * 获取所有支持的文件扩展名列表
-   * @returns {string[]} 支持的文件扩展名数组
+   *
+   * Lists every supported file extension.
    */
   public getSupportedExtensions(): string[] {
     return Object.keys(this.mimeMap).map((e) => e.toLowerCase());
@@ -65,7 +64,8 @@ class Mime {
 
   /**
    * 获取所有图像文件扩展名
-   * @returns {string[]} 图像文件扩展名数组
+   *
+   * Lists every image file extension.
    */
   public getImageExtensions(): string[] {
     return Object.keys(this.mimeMap).filter((k) =>
@@ -75,8 +75,8 @@ class Mime {
 
   /**
    * 检查给定扩展名是否为图像文件扩展名
-   * @param {string} ext - 文件扩展名
-   * @returns {boolean} 如果是图像文件扩展名返回 true，否则返回 false
+   *
+   * Whether the given extension belongs to an image file.
    */
   public isImageExtension(ext: string): boolean {
     if (!ext) return false;
@@ -85,7 +85,8 @@ class Mime {
 
   /**
    * 获取所有音频文件扩展名
-   * @returns {string[]} 音频文件扩展名数组
+   *
+   * Lists every audio file extension.
    */
   public getAudioExtensions(): string[] {
     return Object.keys(this.mimeMap).filter((k) =>
@@ -95,8 +96,8 @@ class Mime {
 
   /**
    * 检查给定扩展名是否为音频文件扩展名
-   * @param {string} ext - 文件扩展名
-   * @returns {boolean} 如果是音频文件扩展名返回 true，否则返回 false
+   *
+   * Whether the given extension belongs to an audio file.
    */
   public isAudioExtension(ext: string): boolean {
     if (!ext) return false;
@@ -104,16 +105,12 @@ class Mime {
   }
 }
 
-/**
- * MIME 类型管理器实例
- * @type {Mime}
- */
 export const mime = new Mime();
 
 /**
  * 根据文件名获取对应的 MIME 类型的便捷函数
- * @param {string} filename - 文件名
- * @returns {string} 对应的 MIME 类型
+ *
+ * Convenience wrapper around `mime.getMimeType()`.
  */
 export function getMimeType(filename: string): string {
   return mime.getMimeType(filename);

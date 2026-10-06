@@ -351,21 +351,3 @@ URL 里没有天然的「磁盘」概念，方案是用**根目录名作为命�
 | 音频续播   | 每首独立 `localStorage` 进度，切歌 / 重进页面可续播             |
 | 手机熄屏   | 播放时申请 Screen Wake Lock，页面重新可见时自动续租             |
 | 可观测性   | 每个请求记录方法、URL、状态码、耗时、UA；日志级别可调           |
-
-## 十一、可扩展方向
-
-- **测试**：为 `isPathSafe`、`resolveBaseAndRel`、Range 解析、`shareFolders` 优先级补充单元测试（可用 Node 内置 `node:test`，不新增依赖），并为路由补集成测试。
-- **安全**：引入可选的 Token / 口令鉴权、`path.relative` 版路径校验、模板输出转义。
-- **体验**：视频续播进度、列表搜索与分页、外挂字幕（`.srt` / `.ass`）加载、服务端缩略图生成。
-- **能力**：可选集成 `ffmpeg` 做按需转码 / HLS 分片，覆盖浏览器原生不支持的格式。
-- **工程**：加入 ESLint / Prettier 与 CI；`pkg` 之外评估 `node --experimental-sea`、`bun build --compile` 等更新的单文件方案。
-
-## 十二、开发约定
-
-- **分层职责**：`routes` 只做 URL → handler 映射；`controllers` 承载业务逻辑；`utils` 提供无状态能力。
-- **类型与注释**：开启 `strict`，导出成员均带 JSDoc（中文说明 + 参数 / 返回值类型）。
-- **错误处理**：每个 handler 内部 `try/catch`，按语义返回 `403 / 404 / 500` 并记录 `logger.error`，避免异常泄漏到进程。
-- **命名**：文件小驼峰（`shareFolders.ts`），类名大驼峰，常量全大写下划线，日志统一带 `【模块名】` 前缀便于检索。
-- **提交信息**：遵循 `feat: / fix: / chore:` 前缀（见 `git log`）。
-
----

@@ -13,12 +13,16 @@ import { language, t } from "./utils/i18n";
 
 /**
  * 设置控制台窗口标题，方便双击运行 exe 时识别
+ *
+ * Sets the console window title so a double-clicked exe is easy to recognise.
  */
 process.title = t("LocalShare 文件共享服务", "LocalShare File Sharing Service");
 
 /**
  * 打印本次检测到的控制台语言，便于排查输出为何是中文/英文
  * （可用环境变量 LOCALSHARE_LANG=zh|en 强制指定）
+ *
+ * Prints the detected console language; `LOCALSHARE_LANG=zh|en` forces it.
  */
 logger.debug(
   t(
@@ -29,7 +33,8 @@ logger.debug(
 
 /**
  * 获取本机所有局域网 IPv4 地址
- * @returns {string[]} 局域网 IPv4 地址列表
+ *
+ * Collects every non-internal IPv4 address of this machine.
  */
 function getLanIPv4Addresses(): string[] {
   const addresses: string[] = [];
@@ -50,6 +55,9 @@ function getLanIPv4Addresses(): string[] {
  *
  * 仅在标准输入是终端（即双击运行）时暂停；管道/重定向场景直接退出，
  * 这样自动化脚本不会被阻塞。
+ *
+ * Pauses only when stdin is a TTY (i.e. a double-clicked exe); piped or
+ * redirected runs exit immediately so automation scripts are never blocked.
  */
 function pauseBeforeExit(): void {
   if (!process.stdin.isTTY) return;
@@ -57,6 +65,7 @@ function pauseBeforeExit(): void {
     execSync("pause", { stdio: "inherit" });
   } catch (e) {
     // 暂停失败（例如非 cmd 环境）时忽略，直接退出
+    // A failing pause (for example outside cmd) is ignored and the process exits
   }
 }
 
@@ -64,7 +73,9 @@ function pauseBeforeExit(): void {
  * 本次运行实际要共享的目录列表
  *
  * 解析优先级：命令行参数 > 环境变量 SHARE_DIR/SHARE_DIRS > 文件夹选择窗口 > 配置文件默认目录
- * @type {string[]|null}
+ *
+ * Folders to share for this run; precedence: command-line arguments >
+ * `SHARE_DIR`/`SHARE_DIRS` > folder picker dialog > defaults from `config.ts`.
  */
 const resolvedFolders: string[] | null = resolveSharedFolders();
 
@@ -84,15 +95,15 @@ if (resolvedFolders === null) {
 
 /**
  * 本次运行实际使用的共享目录（没有指定时回退到配置文件中的默认目录）
- * @type {string[]}
+ *
+ * Folders actually used by this run, falling back to the defaults from
+ * `config.ts` when the user did not pick any.
  */
 const SHARED_FOLDERS: string[] =
   resolvedFolders.length > 0 ? resolvedFolders : VIDEO_FOLDERS;
 
-// 让控制器使用本次运行选择的共享目录
 videoController.setVideoFolders(SHARED_FOLDERS);
 
-// 确保每个共享目录存在（支持多个路径）
 for (const folder of SHARED_FOLDERS) {
   try {
     if (!fs.existsSync(folder)) {
@@ -109,22 +120,20 @@ for (const folder of SHARED_FOLDERS) {
   }
 }
 
-/**
- * Express 应用实例
- * @type {express.Application}
- */
 const app = express();
 
 /**
- * 启用 gzip 压缩中间件
+ * gzip 压缩中间件
+ * 视频流、播放器页面与带 Range 的请求不压缩，避免浪费 CPU 并破坏媒体流
+ *
+ * gzip middleware: video streams, player pages and range requests are never
+ * compressed, which would waste CPU and corrupt the media stream.
  */
-// 压缩中间件：对大文件（视频流）和带 Range 的请求禁用压缩，避免破坏媒体流
 app.use(
   compression({
     filter: (req, res) => {
       try {
         const url = String(req.url || "");
-        // 如果是视频流或播放器页面或存在 Range 请求，则不要压缩
         if (url.startsWith("/video/") || url.startsWith("/watch/")) return false;
         if (req.headers && req.headers.range) return false;
       } catch (e) {}
@@ -133,17 +142,13 @@ app.use(
   })
 );
 
-/**
- * 启用 CORS 跨域资源共享中间件
- */
 app.use(cors());
 
 /**
- * 请求日志记录中间件
- * 记录每个请求的开始时间、方法、URL 和结束时间
- * @param {express.Request} req - Express 请求对象
- * @param {express.Response} res - Express 响应对象
- * @param {express.NextFunction} next - Express 下一步函数
+ * 请求日志记录中间件，记录每个请求的方法、URL、状态码与耗时
+ *
+ * Request logging middleware: logs the method, URL, status code and duration of
+ * every request.
  */
 app.use((req, res, next) => {
   const start: number = Date.now();
@@ -174,9 +179,6 @@ app.use((req, res, next) => {
   next();
 });
 
-/**
- * 挂载视频相关路由
- */
 app.use("/", videoRoutes);
 
 /**
@@ -186,15 +188,17 @@ app.use("/", videoRoutes);
  * 若在 listening 回调里立刻打印地址，屏幕上会出现一个其实没有在使用的端口号。
  * 因此稍等片刻，确认本次监听没有报错后再打印启动信息。
  *
- * @type {number}
+ * Delay before the start-up banner. On Windows Node may emit `listening` before
+ * an `error` when the port is already taken, so printing the address right away
+ * could show a port that is not actually in use; waiting briefly avoids that.
  */
 const STARTUP_BANNER_DELAY_MS = 300;
 
 /**
  * 尝试监听指定端口，如果端口被占用则尝试下一个端口
- * @param {number} port - 要监听的端口号
- * @param {number} attemptsLeft - 剩余尝试次数，默认为3次
- * @returns {import("http").Server} HTTP 服务器实例
+ *
+ * Tries to listen on the given port and moves on to the next one when it is
+ * already in use.
  */
 function tryListen(port: number, attemptsLeft = 3) {
   logger.info(
@@ -204,7 +208,8 @@ function tryListen(port: number, attemptsLeft = 3) {
     )
   );
   const startAttempt = Date.now();
-  /** 本次监听是否已失败（用于避免端口被占用时打印出错误的地址） */
+  // 本次监听是否已失败，用于避免端口被占用时打印出错误的地址
+  // Whether this attempt already failed, so a dead address is never printed
   let failed = false;
 
   const server = app.listen(port, () => {
@@ -290,16 +295,8 @@ function tryListen(port: number, attemptsLeft = 3) {
   return server;
 }
 
-/**
- * HTTP 服务器实例
- * @type {import("http").Server}
- */
 const server: import("http").Server = tryListen(PORT, 10);
 
-/**
- * 服务器错误事件监听器
- * @param {any} err - 错误对象
- */
 server.on("error", (err: any) => {
   logger.error([
     "[server] error",
@@ -307,9 +304,6 @@ server.on("error", (err: any) => {
   ]);
 });
 
-/**
- * 服务器监听事件监听器
- */
 server.on("listening", () => {
   logger.info([
     "[server] listening event, address=",

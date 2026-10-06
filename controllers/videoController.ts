@@ -11,19 +11,17 @@ import { t } from "../utils/i18n";
 /**
  * 视频控制器类
  * 负责处理所有与视频相关的请求
+ *
+ * Handles every request related to the shared folders.
  */
 export class VideoController {
-  /**
-   * 视频文件夹路径
-   * @private
-   * @type {string}
-   */
   private videoFolder: string;
   private videoFolders: string[];
 
   /**
    * 创建一个新的视频控制器实例
-   * @param {string} videoFolder - 视频文件夹路径，默认为配置中的 VIDEO_FOLDER
+   *
+   * Creates a controller; the shared folders default to `VIDEO_FOLDER`.
    */
   constructor(videoFolders: string[] = [VIDEO_FOLDER]) {
     this.videoFolders = videoFolders;
@@ -36,7 +34,8 @@ export class VideoController {
    * 供程序启动时通过“选择文件夹”窗口动态指定目录后调用；
    * 传入空数组时保持不变。
    *
-   * @param {string[]} videoFolders - 新的共享根目录列表
+   * Updates the shared roots at runtime; it is called after the folder picker
+   * ran. An empty array leaves the current folders untouched.
    */
   public setVideoFolders(videoFolders: string[]): void {
     if (!Array.isArray(videoFolders) || videoFolders.length === 0) return;
@@ -60,6 +59,11 @@ export class VideoController {
    * 解析请求中的子路径，支持以根目录名称作为前缀的多根映射。
    * 如果只配置了一个根，会把整个子路径当作相对路径处理。
    * 返回 null 表示找不到对应的根（多根模式下提供了未知的前缀）
+   *
+   * Resolves the sub-path of a request, supporting multi-root mapping where the
+   * first segment is the root name. With a single root the whole sub-path is
+   * treated as relative. null means no root matched (unknown prefix while
+   * several roots are configured).
    */
   private resolveBaseAndRel(subPath: string): { base: string; relPath: string } | null {
     const clean = String(subPath || "").replace(/^\/+|\/+$/g, "");
@@ -79,6 +83,9 @@ export class VideoController {
 
   /**
    * 异步解析：先按根名匹配，若未匹配则尝试在每个根下查找该相对路径（向后兼容旧链接）
+   *
+   * Async variant: tries the root name first and then looks for the relative path
+   * under every root, so links created before multi-root support keep working.
    */
   private async asyncResolveBaseAndRel(subPath: string): Promise<{ base: string; relPath: string } | null> {
     const clean = String(subPath || "").replace(/^\/+|\/+$/g, "");
@@ -86,14 +93,18 @@ export class VideoController {
     if (direct) return direct;
 
     // 未按根名匹配且配置了多个根：尝试在每个根下查找该相对路径是否存在
+    // No root-name match with several roots configured: look for the relative
+    // path under each root
     for (const root of this.videoFolders) {
       try {
         const candidate = path.join(root, clean);
         // 如果存在该路径（文件或目录），则认为该 root 是匹配的基准
+        // An existing path (file or directory) makes this root the match
         await fs.stat(candidate);
         return { base: root, relPath: clean };
       } catch (e) {
         // 不存在则继续
+        // Keep looking in the remaining roots
       }
     }
 
@@ -102,27 +113,31 @@ export class VideoController {
 
   /**
    * 为 Content-Disposition 生成安全的头值，使用 RFC5987 对非 ASCII 字符编码
-   * @private
-   * @param {string} filename
-   * @returns {string}
+   *
+   * Builds a safe Content-Disposition header value, RFC5987-encoding non-ASCII
+   * characters.
    */
   private makeContentDisposition(filename: string): string {
     if (!filename) return "inline";
     // 移除可能导致 header 错误的控制字符和引号
+    // Strip control characters and quotes that would break the header
     const sanitized = filename.replace(/\r|\n|\"|\\/g, "_");
     // 生成 ASCII 回退名（替换非可打印 ASCII）
+    // Build the ASCII fallback name (non-printable ASCII is replaced)
     const fallback = sanitized.replace(/[^\x20-\x7E]/g, "_");
     // RFC5987 编码 (UTF-8 percent-encoding)
+    // RFC5987 encoding (UTF-8 percent-encoding)
     const encoded = encodeURIComponent(sanitized).replace(/'/g, "%27");
     return `inline; filename="${fallback}"; filename*=UTF-8''${encoded}`;
   }
 
   /**
    * 自然排序函数，用于对字符串进行自然排序（考虑数字）
-   * @private
-   * @param {string} a - 第一个比较字符串
-   * @param {string} b - 第二个比较字符串
-   * @returns {number} 比较结果：负数表示 a < b，0 表示相等，正数表示 a > b
+   *
+   * Natural sort that takes embedded numbers into account.
+   *
+   * @returns 比较结果：负数表示 a < b，0 表示相等，正数表示 a > b
+   *          / Negative when a < b, 0 when equal, positive when a > b
    */
   private naturalSort(a: string, b: string): number {
     return a.localeCompare(b, undefined, {
@@ -135,9 +150,9 @@ export class VideoController {
    * 获取文件/目录的创建时间（毫秒时间戳）
    * 优先使用 birthtime（创建时间）；部分文件系统不支持时会返回 0，
    * 此时回退到 mtime（修改时间）。
-   * @private
-   * @param {string} targetPath - 文件或目录的完整路径
-   * @returns {Promise<number>} 创建时间（毫秒时间戳），读取失败返回 0
+   *
+   * Creation time in milliseconds. `birthtime` is preferred and `mtime` is used
+   * when the file system does not support it; 0 is returned when reading fails.
    */
   private async getCreationTimeMs(targetPath: string): Promise<number> {
     try {
@@ -146,16 +161,18 @@ export class VideoController {
       if (st.mtimeMs && st.mtimeMs > 0) return st.mtimeMs;
     } catch (e) {
       // 忽略无法读取的项，按时间为 0 处理
+      // Items that cannot be read are treated as time 0
     }
     return 0;
   }
 
   /**
    * 按创建时间从新到旧排序名称数组（创建时间相同则按名称自然排序）
-   * @private
-   * @param {string} baseDir - 名称所在目录
-   * @param {string[]} names - 待排序的名称数组
-   * @returns {Promise<string[]>} 排序后的新数组（不修改入参）
+   *
+   * Sorts names from newest to oldest, falling back to the natural sort when the
+   * creation times are equal.
+   *
+   * @returns 排序后的新数组（不修改入参）/ New sorted array, the input is untouched
    */
   private async sortByCreationDesc(
     baseDir: string,
@@ -176,10 +193,11 @@ export class VideoController {
 
   /**
    * 按创建时间从新到旧排序目录项（Dirent）数组（创建时间相同则按名称自然排序）
-   * @private
-   * @param {string} baseDir - 目录项所在目录
-   * @param {Dirent[]} dirents - 待排序的目录项数组
-   * @returns {Promise<Dirent[]>} 排序后的新数组（不修改入参）
+   *
+   * Sorts directory entries from newest to oldest, falling back to the natural
+   * sort when the creation times are equal.
+   *
+   * @returns 排序后的新数组（不修改入参）/ New sorted array, the input is untouched
    */
   private async sortDirentsByCreationDesc(
     baseDir: string,
@@ -200,10 +218,9 @@ export class VideoController {
 
   /**
    * 检查目标路径是否在基础路径范围内，防止路径遍历攻击
-   * @static
-   * @param {string} base - 基础路径
-   * @param {string} target - 目标路径
-   * @returns {boolean} 如果目标路径在基础路径内返回 true，否则返回 false
+   *
+   * Guards against path traversal by verifying that the target stays inside the
+   * base path.
    */
   static isPathSafe(base: string, target: string): boolean {
     const resolvedBase = path.resolve(base);
@@ -213,9 +230,8 @@ export class VideoController {
 
   /**
    * 获取视频列表页面
-   * @param {Request} _req - Express 请求对象
-   * @param {Response} res - Express 响应对象
-   * @returns {Promise<void>}
+   *
+   * Renders the video list page.
    */
   public async getVideoList(_req: Request, res: Response): Promise<void> {
     logger.debug(t("【getVideoList】 入口", "[getVideoList] enter"));
@@ -240,6 +256,7 @@ export class VideoController {
 
     try {
       // 如果配置了多个根，则首页显示各根目录作为独立文件夹
+      // With several roots the home page lists each root as its own folder
       if (this.videoFolders && this.videoFolders.length > 1) {
         const folderItemsArr = this.videoFolders.map((f) => {
           const name = this.getRootName(f);
@@ -449,9 +466,8 @@ export class VideoController {
   /**
    * 流式传输视频文件
    * 支持范围请求和完整的文件流传输
-   * @param {Request} req - Express 请求对象
-   * @param {Response} res - Express 响应对象
-   * @returns {Promise<void>}
+   *
+   * Streams a video file, supporting range requests as well as full transfers.
    */
   public async streamVideo(req: Request, res: Response): Promise<void> {
     logger.debug(t("【streamVideo】 入口", "[streamVideo] enter"));
@@ -641,6 +657,9 @@ export class VideoController {
   /**
    * 播放页面（嵌入 <video> 的播放器）
    * 如果目标是目录或图片/音频，会重定向到对应的页面
+   *
+   * Player page with an embedded <video> element; directories and image/audio
+   * files are redirected to their own pages.
    */
   public async watch(req: Request, res: Response): Promise<void> {
     logger.debug(t("【watch】 入口", "[watch] enter"));
@@ -711,9 +730,8 @@ export class VideoController {
 
   /**
    * 获取文件夹内容列表
-   * @param {Request} req - Express 请求对象
-   * @param {Response} res - Express 响应对象
-   * @returns {Promise<void>}
+   *
+   * Lists the content of a folder.
    */
   public async getFolderList(req: Request, res: Response): Promise<void> {
     logger.debug(t("【getFolderList】 入口", "[getFolderList] enter"));
@@ -912,9 +930,8 @@ export class VideoController {
 
   /**
    * 漫画查看器页面
-   * @param {Request} req - Express 请求对象
-   * @param {Response} res - Express 响应对象
-   * @returns {Promise<void>}
+   *
+   * Renders the comic viewer page.
    */
   public async comicViewer(req: Request, res: Response): Promise<void> {
     logger.debug(t("【comicViewer】 入口", "[comicViewer] enter"));
@@ -1020,9 +1037,8 @@ export class VideoController {
 
   /**
    * 音频播放器页面
-   * @param {Request} req - Express 请求对象
-   * @param {Response} res - Express 响应对象
-   * @returns {Promise<void>}
+   *
+   * Renders the audio player page.
    */
   public async audioPlayer(req: Request, res: Response): Promise<void> {
     logger.debug(t("【audioPlayer】 入口", "[audioPlayer] enter"));
@@ -1132,8 +1148,4 @@ export class VideoController {
   }
 }
 
-/**
- * 视频控制器实例
- * @type {VideoController}
- */
 export const videoController = new VideoController(VIDEO_FOLDERS);

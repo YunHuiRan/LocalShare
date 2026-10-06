@@ -8,25 +8,19 @@ const baseDir = typeof __dirname !== "undefined" ? __dirname : process.cwd();
 /**
  * 模板渲染器类
  * 负责渲染各种页面模板
+ *
+ * Renders the page templates shipped in `views/`.
  */
 class TemplateRenderer {
-  /**
-   * 模板文件路径
-   * @private
-   * @type {string}
-   */
   private templatePath: string;
   
-  /**
-   * 缓存的模板内容
-   * @private
-   * @type {string|null}
-   */
   private cachedTemplate: string | null = null;
 
   /**
    * 创建模板渲染器实例
-   * @param {string} [templatePath] - 模板文件路径
+   *
+   * Creates a renderer; the template path defaults to
+   * `views/baseTemplate.html` next to this file.
    */
   constructor(templatePath?: string) {
     this.templatePath =
@@ -34,9 +28,9 @@ class TemplateRenderer {
   }
 
   /**
-   * 加载模板文件内容
-   * @private
-   * @returns {Promise<string>} 模板文件内容
+   * 加载模板文件内容，首次读取后缓存，后续直接返回缓存
+   *
+   * Loads the template content, reading it once and reusing the cache afterwards.
    */
   private async loadTemplate(): Promise<string> {
     if (this.cachedTemplate !== null) {
@@ -82,11 +76,13 @@ class TemplateRenderer {
 
   /**
    * 渲染视频列表页面
-   * @param {string} videoItems - 视频项 HTML 内容
-   * @param {string} folderPath - 文件夹路径
-   * @param {string} folderItems - 文件夹项 HTML 内容
-   * @param {string} breadcrumb - 面包屑导航 HTML 内容
-   * @returns {Promise<string>} 渲染后的完整 HTML 页面
+   *
+   * Renders the video list page.
+   *
+   * @param videoItems - 视频项 HTML 内容 / HTML of the video entries
+   * @param folderItems - 文件夹项 HTML 内容 / HTML of the folder entries
+   * @param breadcrumb - 面包屑导航 HTML 内容 / HTML of the breadcrumb
+   * @returns 渲染后的完整 HTML 页面 / The complete rendered HTML page
    */
   public async renderVideoListPage(
     videoItems: string,
@@ -95,6 +91,8 @@ class TemplateRenderer {
     breadcrumb: string
   ): Promise<string> {
     // 先本地化模板（{{t:中文|English}} 标记 + <html lang>），再替换业务占位符
+    // Localize the template ({{t:中文|English}} tokens + <html lang>) before the
+    // business placeholders are substituted
     let html: string = localizeTemplate(await this.loadTemplate());
 
     html = html.replace("{{videoItems}}", videoItems);
@@ -107,10 +105,12 @@ class TemplateRenderer {
 
   /**
    * 渲染漫画页面
-   * @param {string} imagesJson - 图片 URL 数组的 JSON 字符串
-   * @param {string} title - 页面标题
-   * @param {number} startIndex - 起始图片索引
-   * @returns {Promise<string>} 渲染后的完整 HTML 页面
+   *
+   * Renders the comic viewer page.
+   *
+   * @param imagesJson - 图片 URL 数组的 JSON 字符串 / JSON string of the image URLs
+   * @param startIndex - 起始图片索引 / Index of the image to open first
+   * @returns 渲染后的完整 HTML 页面 / The complete rendered HTML page
    */
   public async renderComicPage(
     imagesJson: string,
@@ -162,10 +162,12 @@ class TemplateRenderer {
 
   /**
    * 渲染音频播放页面
-   * @param {string} audioJson - 音频 URL 数组的 JSON 字符串
-   * @param {string} title - 页面标题
-   * @param {number} startIndex - 起始音频索引
-   * @returns {Promise<string>} 渲染后的完整 HTML 页面
+   *
+   * Renders the audio player page.
+   *
+   * @param audioJson - 音频 URL 数组的 JSON 字符串 / JSON string of the audio URLs
+   * @param startIndex - 起始音频索引 / Index of the track to play first
+   * @returns 渲染后的完整 HTML 页面 / The complete rendered HTML page
    */
   public async renderAudioPage(
     audioJson: string,
@@ -217,9 +219,10 @@ class TemplateRenderer {
 
   /**
    * 渲染视频播放器页面
-   * @param {string} videoSrc - 视频资源 URL
-   * @param {string} title - 页面标题
-   * @returns {Promise<string>} 渲染后的 HTML 页面
+   *
+   * Renders the video player page.
+   *
+   * @returns 渲染后的 HTML 页面 / The rendered HTML page
    */
   public async renderVideoPlayer(videoSrc: string, title: string): Promise<string> {
     const candidates = [
@@ -261,10 +264,6 @@ class TemplateRenderer {
   }
 }
 
-/**
- * 模板渲染器实例
- * @type {TemplateRenderer}
- */
 export const templateRenderer = new TemplateRenderer();
 
 export default TemplateRenderer;

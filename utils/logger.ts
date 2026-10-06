@@ -1,14 +1,12 @@
 import { t } from "./i18n";
 
-/**
- * 日志级别类型定义
- * @typedef {'debug' | 'info' | 'warn' | 'error'} LogLevel
- */
 type LogLevel = "debug" | "info" | "warn" | "error";
 
 /**
- * 日志级别顺序映射
- * @type {Record<LogLevel, number>}
+ * 日志级别顺序映射，数值越大越严重，用于比较输出阈值
+ *
+ * Log-level order: a larger number is more severe and is compared against the
+ * configured threshold.
  */
 const LevelOrder: Record<LogLevel, number> = {
   debug: 10,
@@ -18,9 +16,9 @@ const LevelOrder: Record<LogLevel, number> = {
 };
 
 /**
- * 将日志级别转换为当前语言的标签
- * @param {LogLevel} level - 日志级别
- * @returns {string} 对应的语言标签
+ * 将日志级别转换为当前语言的标签（`[信息]` / `[INFO]`）
+ *
+ * Maps a log level to its label in the current language (`[信息]` / `[INFO]`).
  */
 function levelLabel(level: LogLevel): string {
   switch (level) {
@@ -38,26 +36,19 @@ function levelLabel(level: LogLevel): string {
 /**
  * 日志记录器类
  * 提供统一的日志记录功能，支持不同级别和前缀
+ *
+ * Logger with a configurable level and an optional prefix.
  */
 export class Logger {
-  /**
-   * 日志前缀
-   * @private
-   * @type {string|undefined}
-   */
   private prefix?: string;
-  
-  /**
-   * 日志级别
-   * @private
-   * @type {LogLevel}
-   */
+
   private level: LogLevel;
 
   /**
    * 创建一个新的日志记录器实例
-   * @param {string} [prefix] - 日志前缀
-   * @param {LogLevel} [level] - 日志级别，默认从环境变量 LOG_LEVEL 获取，如果未设置则为 "info"
+   *
+   * Creates a logger instance; the level comes from the argument, then from the
+   * `LOG_LEVEL` environment variable, and finally defaults to "info".
    */
   constructor(prefix?: string, level?: LogLevel) {
     this.prefix = prefix;
@@ -65,31 +56,23 @@ export class Logger {
     this.level = level || env || "info";
   }
 
-  /**
-   * 获取当前时间的 ISO 字符串格式
-   * @private
-   * @returns {string} 当前时间的 ISO 字符串
-   */
   private timestamp(): string {
     return new Date().toISOString();
   }
 
   /**
-   * 判断是否应该记录指定级别的日志
-   * @private
-   * @param {LogLevel} level - 要判断的日志级别
-   * @returns {boolean} 如果应该记录返回 true，否则返回 false
+   * 判断是否应该记录指定级别的日志（级别数值达到当前阈值才输出）
+   *
+   * Whether a message of the given level passes the configured threshold.
    */
   private shouldLog(level: LogLevel): boolean {
     return LevelOrder[level] >= LevelOrder[this.level];
   }
 
   /**
-   * 格式化日志消息
-   * @private
-   * @param {LogLevel} level - 日志级别
-   * @param {string|string[]} message - 日志消息，可以是字符串或字符串数组
-   * @returns {string} 格式化后的日志消息
+   * 格式化日志消息，最终形如 `时间戳 [级别] 前缀消息`
+   *
+   * Formats a log line as `<ISO timestamp> [LEVEL] <prefix><message>`.
    */
   private format(level: LogLevel, message: string | string[]): string {
     const msg = Array.isArray(message) ? message.join(" ") : message;
@@ -97,38 +80,21 @@ export class Logger {
     return `${this.timestamp()} [${levelLabel(level)}] ${prefix}${msg}`;
   }
 
-  /**
-   * 记录调试级别日志
-   * @param {string|string[]} message - 日志消息
-   */
   public debug(message: string | string[]): void {
     if (!this.shouldLog("debug")) return;
     console.debug(this.format("debug", message));
   }
 
-  /**
-   * 记录信息级别日志
-   * @param {string|string[]} message - 日志消息
-   */
   public info(message: string | string[]): void {
     if (!this.shouldLog("info")) return;
     console.log(this.format("info", message));
   }
 
-  /**
-   * 记录警告级别日志
-   * @param {string|string[]} message - 日志消息
-   */
   public warn(message: string | string[]): void {
     if (!this.shouldLog("warn")) return;
     console.warn(this.format("warn", message));
   }
 
-  /**
-   * 记录错误级别日志
-   * @param {string|string[]|unknown} message - 日志消息
-   * @param {...unknown} args - 额外的参数
-   */
   public error(message: string | string[] | unknown, ...args: unknown[]): void {
     if (!this.shouldLog("error")) return;
     const msg = Array.isArray(message) ? message.join(" ") : String(message);
@@ -136,10 +102,6 @@ export class Logger {
   }
 }
 
-/**
- * 默认日志记录器实例
- * @type {Logger}
- */
 export const logger = new Logger(
   undefined,
   (process.env.LOG_LEVEL as LogLevel) || "debug"

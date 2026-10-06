@@ -6,8 +6,8 @@ import { t } from "./i18n";
 
 /**
  * 判断给定路径是否存在且为目录
- * @param {string} targetPath - 待检查的路径
- * @returns {boolean} 是目录返回 true，否则返回 false
+ *
+ * Whether the given path exists and is a directory.
  */
 function isDirectory(targetPath: string): boolean {
   try {
@@ -24,7 +24,10 @@ function isDirectory(targetPath: string): boolean {
  * 因此从第 1 个参数开始解析；直接用 node/tsx 运行时从第 2 个参数开始。
  * 只有真实存在且为目录的参数才会被采用。
  *
- * @returns {string[]} 命令行中指定的目录绝对路径列表
+ * Parses the folders given on the command line. In a packaged exe
+ * (`process.pkg`) `process.argv` has no script path, so parsing starts at the
+ * first argument and otherwise at the second. Only arguments that exist and are
+ * directories are kept.
  */
 function getFolderArgs(): string[] {
   const isPackaged: boolean = Boolean((process as any).pkg);
@@ -40,7 +43,8 @@ function getFolderArgs(): string[] {
 
 /**
  * 解析环境变量 `SHARE_DIR` / `SHARE_DIRS` 中指定的共享目录（多个目录用 `;` 分隔）
- * @returns {string[]} 环境变量中指定的目录绝对路径列表
+ *
+ * Parses the folders listed in `SHARE_DIR` / `SHARE_DIRS` (`;` separated).
  */
 function getEnvFolders(): string[] {
   const raw: string = process.env.SHARE_DIR || process.env.SHARE_DIRS || "";
@@ -63,8 +67,13 @@ function getEnvFolders(): string[] {
  * 3. 弹出“选择文件夹”窗口让用户选择
  * 4. 以上都没有时返回空数组，表示使用配置文件 `config.ts` 中的默认目录
  *
- * @returns {string[]|null} 共享目录列表；空数组表示使用默认配置；
- *                          返回 null 表示用户在文件夹选择窗口中点了“取消”
+ * Resolves the folders to share for this run, in order: command-line arguments,
+ * the `SHARE_DIR` / `SHARE_DIRS` variables, then the folder picker dialog; when
+ * none of them applies the defaults from `config.ts` are used.
+ *
+ * @returns 空数组表示使用默认配置，null 表示用户在文件夹选择窗口中点了“取消”
+ *          / An empty array means "use the defaults", null means the user
+ *          cancelled the folder picker
  */
 export function resolveSharedFolders(): string[] | null {
   const argFolders = getFolderArgs();
@@ -94,6 +103,7 @@ export function resolveSharedFolders(): string[] | null {
   }
 
   // 自动化脚本或调试时可通过 NO_PICKER=1 跳过弹窗，直接使用默认目录
+  // NO_PICKER=1 skips the dialog so scripts and debugging runs use the defaults
   if (process.env.NO_PICKER === "1") {
     logger.info(
       t(

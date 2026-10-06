@@ -352,21 +352,3 @@ Page text is localised in two places so that a non-Chinese system gets an entire
 | Audio resume        | Per-track `localStorage` progress, resume after switching tracks or reloading               |
 | Screen sleep        | A Screen Wake Lock is requested while playing and re-acquired when the page becomes visible |
 | Observability       | Every request logs method, URL, status, duration and user agent; log level is configurable  |
-
-## 11. Future Work
-
-- **Testing**: unit tests for `isPathSafe`, `resolveBaseAndRel`, range parsing and the `shareFolders` priority chain (Node's built-in `node:test` avoids new dependencies), plus integration tests for the routes.
-- **Security**: optional token / password authentication, a `path.relative`-based path check and template output escaping.
-- **Experience**: video resume position, list search and paging, external subtitles (`.srt` / `.ass`) and server-side thumbnail generation.
-- **Capability**: optional `ffmpeg` integration for on-demand transcoding / HLS segmentation to cover formats browsers cannot play natively.
-- **Tooling**: ESLint / Prettier and CI, plus an evaluation of newer single-file alternatives to `pkg` such as `node --experimental-sea` and `bun build --compile`.
-
-## 12. Development Conventions
-
-- **Layering**: `routes` only map URLs to handlers; `controllers` hold the business logic; `utils` provide stateless helpers.
-- **Types and comments**: `strict` mode is enabled and exported members carry JSDoc comments.
-- **Error handling**: every handler wraps its work in `try/catch`, returns `403 / 404 / 500` as appropriate and reports through `logger.error` instead of letting exceptions reach the process.
-- **Naming**: lowerCamelCase file names (`shareFolders.ts`), PascalCase classes, UPPER_SNAKE_CASE constants, and log messages prefixed with a bracketed module name for easy filtering.
-- **Commits**: follow the `feat: / fix: / chore:` prefix convention (see `git log`).
-
----

@@ -15,30 +15,38 @@
  * - 控制台日志：`t("中文", "English")`；
  * - 控制器里拼出的 HTML 片段：同样使用 `t("中文", "English")`；
  * - `views/*.html` 模板：写 `{{t:中文|English}}`，渲染时由 `localizeTemplate()` 替换。
+ *
+ * Bilingual (Chinese / English) messages.
+ *
+ * The probe order is `LOCALSHARE_LANG` / `LOCALSHARE_LANGUAGE`, then the
+ * `LC_ALL` / `LC_MESSAGES` / `LANG` / `LANGUAGE` variables, then the ICU locale
+ * reported by `Intl.DateTimeFormat().resolvedOptions().locale`; when nothing can
+ * be detected Chinese is kept. Three call sites: console logs and the HTML
+ * snippets built in the controller both use `t("中文", "English")`, while
+ * `views/*.html` templates use `{{t:中文|English}}`, replaced on render.
  */
 
-/**
- * 控制台支持的语言
- * @typedef {'zh' | 'en'} Language
- */
 export type Language = "zh" | "en";
 
 /**
  * 把各种语言标记（zh-CN、zh_CN.UTF-8、en-US……）归一化为支持的语言
  *
- * @param {string} tag - 语言标记
- * @returns {Language|null} 归一化结果；无法识别时返回 null
+ * Normalizes a language tag (zh-CN, zh_CN.UTF-8, en-US ...) to a supported
+ * language; null means the tag could not be recognised.
  */
 function normalizeLanguage(tag: string): Language | null {
   const value = String(tag || "").trim().toLowerCase();
   if (!value) return null;
   // POSIX / C 表示未指定语言
+  // POSIX and "C" mean "no language specified"
   if (value === "posix" || value === "c") return null;
 
   // zh_CN.UTF-8、zh-CN、zh-Hans-CN…… 取主语言子标签
+  // Take the primary subtag of zh_CN.UTF-8, zh-CN, zh-Hans-CN ...
   const primary = value.split(/[._@-]/)[0];
   if (primary === "zh") return "zh";
   // 其它形如 en / ja / de / fr 的语言统一回落到英文
+  // Any other language such as en / ja / de / fr falls back to English
   if (/^[a-z]{2,3}$/.test(primary)) return "en";
   return null;
 }
@@ -46,7 +54,8 @@ function normalizeLanguage(tag: string): Language | null {
 /**
  * 依次读取语言相关环境变量，返回第一个可识别的语言
  *
- * @returns {Language|null} 环境变量中指定的语言；无法识别时返回 null
+ * Returns the first recognised language among the language-related environment
+ * variables.
  */
 function languageFromEnv(): Language | null {
   const candidates: (string | undefined)[] = [
@@ -68,7 +77,8 @@ function languageFromEnv(): Language | null {
 /**
  * 通过 ICU 默认区域判断系统语言（Windows 上取自系统区域设置）
  *
- * @returns {Language|null} 系统语言；无法识别时返回 null
+ * Falls back to the ICU default locale, which on Windows comes from the system
+ * regional settings.
  */
 function languageFromIntl(): Language | null {
   try {
@@ -80,8 +90,9 @@ function languageFromIntl(): Language | null {
 }
 
 /**
- * 本次运行控制台输出使用的语言
- * @type {Language}
+ * 本次运行控制台输出与页面界面使用的语言
+ *
+ * Language used for this run's console output and web pages.
  */
 export const language: Language =
   languageFromEnv() || languageFromIntl() || "zh";
@@ -89,9 +100,7 @@ export const language: Language =
 /**
  * 根据当前语言在中文与英文文案之间选择
  *
- * @param {string} zh - 中文文案
- * @param {string} en - 英文文案
- * @returns {string} 当前语言对应的文案
+ * Picks the Chinese or the English variant for the current language.
  */
 export function t(zh: string, en: string): string {
   return language === "en" ? en : zh;
@@ -99,7 +108,8 @@ export function t(zh: string, en: string): string {
 
 /**
  * 当前语言对应的 HTML `lang` 属性值，写入每个页面的 <html lang="...">
- * @type {string}
+ *
+ * HTML `lang` value for the current language, written into every page.
  */
 export const htmlLang: string = language === "zh" ? "zh-CN" : "en";
 
@@ -107,7 +117,8 @@ export const htmlLang: string = language === "zh" ? "zh-CN" : "en";
  * 页面模板中的双语标记，写法为 `{{t:中文|English}}`
  *
  * 中英文案中不能出现 `{`、`}`、`|` 三个字符。
- * @type {RegExp}
+ *
+ * Neither variant may contain `{`, `}` or `|`.
  */
 const I18N_TOKEN_PATTERN = /\{\{t:([^{}|]*)\|([^{}|]*)\}\}/g;
 
@@ -121,8 +132,11 @@ const I18N_TOKEN_PATTERN = /\{\{t:([^{}|]*)\|([^{}|]*)\}\}/g;
  * 注意：必须在替换 `{{videoItems}}` / `{{title}}` 等占位符之前调用，
  * 避免用户目录名里恰好出现相同写法时被误当成双语标记。
  *
- * @param {string} html - 模板原始内容
- * @returns {string} 本地化后的 HTML
+ * Localizes a page template: replaces every `{{t:中文|English}}` token with the
+ * text of the current language (markup and inline scripts alike) and syncs
+ * `<html lang="...">`. Must run before the `{{videoItems}}` / `{{title}}`
+ * placeholders are substituted, so a folder name that happens to look like a
+ * token is never rewritten.
  */
 export function localizeTemplate(html: string): string {
   return String(html)

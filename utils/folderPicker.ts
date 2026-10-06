@@ -7,7 +7,9 @@ import { t } from "./i18n";
 
 /**
  * 文件夹选择窗口超时时间（毫秒），避免用户长时间不操作导致进程一直挂起
- * @type {number}
+ *
+ * Folder-picker timeout in milliseconds, so an idle dialog cannot hang the
+ * process forever.
  */
 const PICKER_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -18,7 +20,10 @@ const PICKER_TIMEOUT_MS = 5 * 60 * 1000;
  * 只保留了 System32），仅写 "powershell.exe" 会因找不到文件而弹出失败。
  * 因此优先使用系统目录下的绝对路径，全都找不到时再退回依赖 PATH 的名字。
  *
- * @returns {string} powershell.exe 的路径（优先绝对路径）
+ * Resolves the powershell.exe executable. When the packaged exe is copied to
+ * another machine whose PATH is trimmed down, the bare name may not be found, so
+ * absolute paths under the system directory are tried first and only then the
+ * PATH lookup.
  */
 function resolvePowerShellPath(): string {
   const systemRoot: string = process.env.SystemRoot || process.env.windir || "C:\\Windows";
@@ -33,6 +38,7 @@ function resolvePowerShellPath(): string {
       if (fs.existsSync(candidate)) return candidate;
     } catch (e) {
       // 忽略探测失败，继续尝试下一个候选路径
+      // Ignore a failed probe and try the next candidate path
     }
   }
 
@@ -46,7 +52,10 @@ function resolvePowerShellPath(): string {
  * 而不是通过标准输出返回，这样可以避免 Windows 控制台代码页（GBK/UTF-8）
  * 造成中文路径乱码。
  *
- * @returns {string} PowerShell 脚本内容
+ * Builds the PowerShell script for the folder picker. The selection is written
+ * as UTF-8 into the temporary file named by `LOCALSHARE_PICKER_OUT` instead of
+ * stdout, which avoids mojibake on non-ASCII paths caused by the console code
+ * page.
  */
 function buildPickerScript(): string {
   return [
@@ -70,9 +79,14 @@ function buildPickerScript(): string {
  * 通过 PowerShell 调用 .NET 的 FolderBrowserDialog 实现，
  * 不依赖任何第三方原生模块，打包成 exe 后在没有 Node 环境的电脑上同样可用。
  *
- * @param {string} [description] - 窗口中的提示文字
- * @param {string} [initialDir] - 打开窗口时默认定位的目录
- * @returns {string|null} 用户选择的文件夹绝对路径；用户取消或调用失败时返回 null
+ * Opens the native folder picker through PowerShell and the .NET
+ * FolderBrowserDialog, so no third-party native module is required and the
+ * packaged exe also works on machines without Node installed.
+ *
+ * @param description - 窗口中的提示文字 / Text shown inside the dialog
+ * @param initialDir - 打开窗口时默认定位的目录 / Folder the dialog starts in
+ * @returns 用户选择的文件夹绝对路径；用户取消或调用失败时返回 null
+ *          / Absolute path of the selected folder; null when cancelled or failed
  */
 export function pickFolder(
   description = t("请选择要共享的文件夹", "Select a folder to share"),
@@ -152,6 +166,7 @@ export function pickFolder(
     }
 
     // 用户取消选择时不会生成结果文件
+    // A cancelled selection never creates the result file
     if (!fs.existsSync(resultFile)) {
       logger.info(
         t(
@@ -178,6 +193,7 @@ export function pickFolder(
       if (fs.existsSync(resultFile)) fs.unlinkSync(resultFile);
     } catch (e) {
       // 临时文件清理失败不影响主流程
+      // Failing to clean up the temp file does not affect the main flow
     }
   }
 }

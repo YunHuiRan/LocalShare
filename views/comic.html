@@ -47,6 +47,7 @@
         imgEl.src = images[idx];
 
         // 预加载相邻图片
+        // Preload the neighbouring images
         if (images[idx + 1]) new Image().src = images[idx + 1];
         if (images[idx - 1]) new Image().src = images[idx - 1];
       }
@@ -76,21 +77,18 @@
         if (e.key === "End") show(images.length - 1);
       });
 
-      // 触摸事件
       let touchStartX = 0;
       window.addEventListener("touchstart", (e) => {
         touchStartX = e.touches[0].clientX;
       });
       window.addEventListener("touchend", (e) => {
         const diff = e.changedTouches[0].clientX - touchStartX;
-        // 判断滑动距离是否足够触发翻页
         if (Math.abs(diff) > 50) {
           if (diff < 0) next();
           else prev();
         }
       });
 
-      // 图片点击事件
       imgEl.addEventListener("click", (e) => {
         const w = imgEl.getBoundingClientRect().width;
         const clickX = e.clientX - imgEl.getBoundingClientRect().left;
