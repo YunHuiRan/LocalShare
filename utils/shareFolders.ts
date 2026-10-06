@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { pickFolder } from "./folderPicker";
 import { logger } from "./logger";
+import { t } from "./i18n";
 
 /**
  * 判断给定路径是否存在且为目录
@@ -68,29 +69,57 @@ function getEnvFolders(): string[] {
 export function resolveSharedFolders(): string[] | null {
   const argFolders = getFolderArgs();
   if (argFolders.length > 0) {
-    logger.info(`使用命令行参数指定的共享目录: ${JSON.stringify(argFolders)}`);
+    logger.info(
+      t(
+        `使用命令行参数指定的共享目录: ${JSON.stringify(argFolders)}`,
+        `Using shared folders from command-line arguments: ${JSON.stringify(
+          argFolders
+        )}`
+      )
+    );
     return argFolders;
   }
 
   const envFolders = getEnvFolders();
   if (envFolders.length > 0) {
-    logger.info(`使用环境变量指定的共享目录: ${JSON.stringify(envFolders)}`);
+    logger.info(
+      t(
+        `使用环境变量指定的共享目录: ${JSON.stringify(envFolders)}`,
+        `Using shared folders from environment variables: ${JSON.stringify(
+          envFolders
+        )}`
+      )
+    );
     return envFolders;
   }
 
   // 自动化脚本或调试时可通过 NO_PICKER=1 跳过弹窗，直接使用默认目录
   if (process.env.NO_PICKER === "1") {
-    logger.info("NO_PICKER=1，跳过文件夹选择窗口，使用配置文件中的默认目录");
+    logger.info(
+      t(
+        "NO_PICKER=1，跳过文件夹选择窗口，使用配置文件中的默认目录",
+        "NO_PICKER=1, skipping the folder picker and using the default folder from config.ts"
+      )
+    );
     return [];
   }
 
-  logger.info("正在打开文件夹选择窗口，请选择要共享的文件夹……");
-  const picked = pickFolder("请选择要共享的文件夹");
+  logger.info(
+    t(
+      "正在打开文件夹选择窗口，请选择要共享的文件夹……",
+      "Opening the folder picker, please select a folder to share..."
+    )
+  );
+  const picked = pickFolder(
+    t("请选择要共享的文件夹", "Select a folder to share")
+  );
   if (picked) {
-    logger.info(`已选择共享目录: ${picked}`);
+    logger.info(
+      t(`已选择共享目录: ${picked}`, `Selected shared folder: ${picked}`)
+    );
     return [picked];
   }
 
-  logger.warn("未选择任何共享文件夹");
+  logger.warn(t("未选择任何共享文件夹", "No shared folder was selected"));
   return null;
 }

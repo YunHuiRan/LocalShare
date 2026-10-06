@@ -3,6 +3,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import { logger } from "./logger";
+import { t } from "./i18n";
 
 /**
  * 文件夹选择窗口超时时间（毫秒），避免用户长时间不操作导致进程一直挂起
@@ -74,11 +75,16 @@ function buildPickerScript(): string {
  * @returns {string|null} 用户选择的文件夹绝对路径；用户取消或调用失败时返回 null
  */
 export function pickFolder(
-  description = "请选择要共享的文件夹",
+  description = t("请选择要共享的文件夹", "Select a folder to share"),
   initialDir?: string
 ): string | null {
   if (process.platform !== "win32") {
-    logger.warn("当前系统不是 Windows，无法弹出文件夹选择窗口");
+    logger.warn(
+      t(
+        "当前系统不是 Windows，无法弹出文件夹选择窗口",
+        "The folder picker is only available on Windows"
+      )
+    );
     return null;
   }
 
@@ -89,7 +95,12 @@ export function pickFolder(
 
   try {
     const powerShellPath: string = resolvePowerShellPath();
-    logger.debug(`【pickFolder】 正在调用 PowerShell 弹出文件夹选择窗口: ${powerShellPath}`);
+    logger.debug(
+      t(
+        `【pickFolder】 正在调用 PowerShell 弹出文件夹选择窗口: ${powerShellPath}`,
+        `[pickFolder] opening the folder picker via PowerShell: ${powerShellPath}`
+      )
+    );
     const result = spawnSync(
       powerShellPath,
       [
@@ -116,30 +127,51 @@ export function pickFolder(
     );
 
     if (result.error) {
-      logger.error(`【pickFolder】 调用 PowerShell 失败: ${result.error.message}`);
+      logger.error(
+        t(
+          `【pickFolder】 调用 PowerShell 失败: ${result.error.message}`,
+          `[pickFolder] failed to launch PowerShell: ${result.error.message}`
+        )
+      );
       return null;
     }
 
     if (typeof result.status === "number" && result.status !== 0) {
       const stderr = String(result.stderr || "").trim();
       logger.warn(
-        `【pickFolder】 文件夹选择窗口异常退出（exit code ${result.status}）${
-          stderr ? `: ${stderr}` : ""
-        }`
+        t(
+          `【pickFolder】 文件夹选择窗口异常退出（exit code ${result.status}）${
+            stderr ? `: ${stderr}` : ""
+          }`,
+          `[pickFolder] the folder picker exited abnormally (exit code ${
+            result.status
+          })${stderr ? `: ${stderr}` : ""}`
+        )
       );
       return null;
     }
 
     // 用户取消选择时不会生成结果文件
     if (!fs.existsSync(resultFile)) {
-      logger.info("【pickFolder】 用户取消了文件夹选择");
+      logger.info(
+        t(
+          "【pickFolder】 用户取消了文件夹选择",
+          "[pickFolder] the user cancelled folder selection"
+        )
+      );
       return null;
     }
 
     const selected = fs.readFileSync(resultFile, "utf8").trim();
     return selected ? path.resolve(selected) : null;
   } catch (e) {
-    logger.error("【pickFolder】 弹出文件夹选择窗口时出错", e as any);
+    logger.error(
+      t(
+        "【pickFolder】 弹出文件夹选择窗口时出错",
+        "[pickFolder] error while opening the folder picker"
+      ),
+      e as any
+    );
     return null;
   } finally {
     try {

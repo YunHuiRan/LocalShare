@@ -66,6 +66,7 @@
 - **缓存与条件请求**：`ETag` / `Last-Modified`（命中返回 `304`）、图片 `Cache-Control: max-age=86400`、其余 `60`、首页 HTML 5 秒内存缓存。
 - **Gzip 智能旁路**：对 `/video/`、`/watch/` 以及携带 `Range` 的请求关闭压缩，避免破坏媒体流。
 - **分级日志**：`debug / info / warn / error` 四级，含请求耗时与 UA，可通过 `LOG_LEVEL` 环境变量控制。
+- **中英文控制台**：启动时检测系统语言（`LOCALSHARE_LANG` > `LC_ALL` / `LANG` > ICU 区域），非中文环境自动切换为英文日志，中文环境保持原文案。
 
 ## 三、技术栈
 
@@ -146,6 +147,7 @@ LocalShare/
 │  ├─ shareFolders.ts         # 共享目录解析（命令行 / 环境变量 / 弹窗 / 默认）
 │  ├─ folderPicker.ts         # PowerShell 调起系统「选择文件夹」对话框
 │  ├─ logger.ts               # 四级日志
+│  ├─ i18n.ts                 # 控制台语言检测与中英文案
 │  └─ file.ts                 # 文件存在性、视频文件枚举
 ├─ views/
 │  ├─ baseTemplate.html       # 首页 / 目录页模板（{{videoItems}} 等占位符）
@@ -217,6 +219,7 @@ LocalShare.exe
 | `SHARE_DIR` / `SHARE_DIRS` | 指定共享目录，多个用 `;` 分隔 |
 | `NO_PICKER=1` | 跳过文件夹选择弹窗 |
 | `LOG_LEVEL` | 日志级别：`debug`（默认）/ `info` / `warn` / `error` |
+| `LOCALSHARE_LANG` | 强制控制台语言：`zh` / `en`；不设置时按系统语言自动判断（也可用 `LOCALSHARE_LANGUAGE`） |
 
 默认端口与默认共享目录可在 `config.ts` 中修改：
 
@@ -317,6 +320,17 @@ URL 里没有天然的「磁盘」概念，方案是用**根目录名作为命�
 - 端口占用时按 +1 自动重试（最多 10 次），避免与已运行的实例冲突；
 - 启动横幅延迟 300ms 打印，规避 Windows 上 `listening` 早于 `error` 触发导致的「假端口」提示；
 - 双击运行时若报错退出，`pauseBeforeExit()` 在 `stdin` 为 TTY 时执行 `pause`，防止窗口一闪而过；脚本 / 管道场景则直接退出，不阻塞自动化。
+
+### 9.10 控制台语言自动检测
+
+`utils/i18n.ts` 在模块加载时完成一次语言探测，之后所有日志都通过 `t("中文", "English")` 取值：
+
+1. `LOCALSHARE_LANG` / `LOCALSHARE_LANGUAGE`（显式覆盖，便于演示与排障）；
+2. `LC_ALL` / `LC_MESSAGES` / `LANG` / `LANGUAGE`（Linux / macOS 上常见）；
+3. `Intl.DateTimeFormat().resolvedOptions().locale`（Windows 上取自系统区域设置）；
+4. 全部无法判定时保持中文，与历史行为一致。
+
+语言标记统一按主语言子标签归一化（`zh_CN.UTF-8` → `zh`，`en-US` → `en`），`POSIX` / `C` 视为「未指定」；非 `zh` 一律回落到英文。日志级别标签随之切换（`[信息]` / `[INFO]`）。由于中英文案写在同一个调用点，无需维护键值表，也不会出现「新增日志忘记翻译」的漏网项，启动时还会打印一行探测结果，方便确认当前生效的语言。
 
 ## 十、性能与可靠性设计
 

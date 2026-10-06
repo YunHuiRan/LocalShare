@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import { logger } from "./logger";
+import { t } from "./i18n";
 
 const baseDir = typeof __dirname !== "undefined" ? __dirname : process.cwd();
 
@@ -39,7 +40,9 @@ class TemplateRenderer {
    */
   private async loadTemplate(): Promise<string> {
     if (this.cachedTemplate !== null) {
-      logger.debug("【模板】 使用缓存模板");
+      logger.debug(
+        t("【模板】 使用缓存模板", "[template] using cached template")
+      );
       return this.cachedTemplate;
     }
 
@@ -51,20 +54,29 @@ class TemplateRenderer {
 
     for (const p of candidates) {
       try {
-        logger.info(`【模板】 尝试加载模板: ${p}`);
+        logger.info(
+          t(`【模板】 尝试加载模板: ${p}`, `[template] trying file: ${p}`)
+        );
         const content = await fs.readFile(p, "utf-8");
         this.cachedTemplate = content;
-        logger.info(`【模板】 已加载模板并缓存: ${p}`);
+        logger.info(
+          t(
+            `【模板】 已加载模板并缓存: ${p}`,
+            `[template] loaded and cached: ${p}`
+          )
+        );
         return content;
       } catch (e) {
-        logger.debug(`【模板】 未在路径找到模板: ${p}`);
+        logger.debug(
+          t(`【模板】 未在路径找到模板: ${p}`, `[template] not found at: ${p}`)
+        );
       }
     }
 
     const err = new Error(
       `template not found in candidates: ${candidates.join(",")}`
     );
-    logger.error("【模板】 加载失败", err);
+    logger.error(t("【模板】 加载失败", "[template] failed to load"), err);
     throw err;
   }
 
@@ -112,7 +124,12 @@ class TemplateRenderer {
 
     for (const p of candidates) {
       try {
-        logger.info(`【模板】 尝试加载漫画模板: ${p}`);
+        logger.info(
+          t(
+            `【模板】 尝试加载漫画模板: ${p}`,
+            `[template] trying comic template: ${p}`
+          )
+        );
         let content = await fs.readFile(p, "utf-8");
         const escaped = imagesJson.replace(/\\/g, "\\\\").replace(/\"/g, '\\"');
         content = content.replace("{{imagesJson}}", escaped);
@@ -123,14 +140,22 @@ class TemplateRenderer {
         content = content.replace("{{title}}", title);
         return content;
       } catch (e) {
-        logger.debug(`【模板】 未在路径找到漫画模板: ${p}`);
+        logger.debug(
+          t(
+            `【模板】 未在路径找到漫画模板: ${p}`,
+            `[template] comic template not found at: ${p}`
+          )
+        );
       }
     }
 
     const err = new Error(
       `comic template not found in candidates: ${candidates.join(",")}`
     );
-    logger.error("【模板】 漫画模板加载失败", err);
+    logger.error(
+      t("【模板】 漫画模板加载失败", "[template] failed to load comic template"),
+      err
+    );
     throw err;
   }
 
@@ -154,7 +179,12 @@ class TemplateRenderer {
 
     for (const p of candidates) {
       try {
-        logger.info(`【模板】 尝试加载音频模板: ${p}`);
+        logger.info(
+          t(
+            `【模板】 尝试加载音频模板: ${p}`,
+            `[template] trying audio template: ${p}`
+          )
+        );
         let content = await fs.readFile(p, "utf-8");
         const escaped = audioJson.replace(/\\/g, "\\\\").replace(/\"/g, '\\"');
         content = content.replace("{{audioJson}}", escaped);
@@ -165,14 +195,22 @@ class TemplateRenderer {
         content = content.replace("{{title}}", title);
         return content;
       } catch (e) {
-        logger.debug(`【模板】 未在路径找到音频模板: ${p}`);
+        logger.debug(
+          t(
+            `【模板】 未在路径找到音频模板: ${p}`,
+            `[template] audio template not found at: ${p}`
+          )
+        );
       }
     }
 
     const err = new Error(
       `audio template not found in candidates: ${candidates.join(",")}`
     );
-    logger.error("【模板】 音频模板加载失败", err);
+    logger.error(
+      t("【模板】 音频模板加载失败", "[template] failed to load audio template"),
+      err
+    );
     throw err;
   }
 
@@ -191,20 +229,33 @@ class TemplateRenderer {
 
     for (const p of candidates) {
       try {
-        logger.info(`【模板】 尝试加载视频模板: ${p}`);
+        logger.info(
+          t(
+            `【模板】 尝试加载视频模板: ${p}`,
+            `[template] trying video template: ${p}`
+          )
+        );
         let content = await fs.readFile(p, "utf-8");
         content = content.replace("{{videoSrc}}", videoSrc);
         content = content.replace("{{title}}", title);
         return content;
       } catch (e) {
-        logger.debug(`【模板】 未在路径找到视频模板: ${p}`);
+        logger.debug(
+          t(
+            `【模板】 未在路径找到视频模板: ${p}`,
+            `[template] video template not found at: ${p}`
+          )
+        );
       }
     }
 
     const err = new Error(
       `video template not found in candidates: ${candidates.join(",")}`
     );
-    logger.error("【模板】 视频模板加载失败", err);
+    logger.error(
+      t("【模板】 视频模板加载失败", "[template] failed to load video template"),
+      err
+    );
     throw err;
   }
 }

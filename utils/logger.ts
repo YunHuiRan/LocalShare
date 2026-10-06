@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+
 /**
  * 日志级别类型定义
  * @typedef {'debug' | 'info' | 'warn' | 'error'} LogLevel
@@ -16,20 +18,20 @@ const LevelOrder: Record<LogLevel, number> = {
 };
 
 /**
- * 将日志级别转换为中文标签
+ * 将日志级别转换为当前语言的标签
  * @param {LogLevel} level - 日志级别
- * @returns {string} 对应的中文标签
+ * @returns {string} 对应的语言标签
  */
 function levelLabel(level: LogLevel): string {
   switch (level) {
     case "debug":
-      return "调试";
+      return t("调试", "DEBUG");
     case "info":
-      return "信息";
+      return t("信息", "INFO");
     case "warn":
-      return "警告";
+      return t("警告", "WARN");
     case "error":
-      return "错误";
+      return t("错误", "ERROR");
   }
 }
 

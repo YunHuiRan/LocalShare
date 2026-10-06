@@ -66,6 +66,7 @@
 - **Caching and conditional requests**: `ETag` / `Last-Modified` (answered with `304` on a hit), `Cache-Control: max-age=86400` for images and `60` for everything else, plus a 5-second in-memory cache for the home page HTML.
 - **Smart gzip bypass**: compression is disabled for `/video/`, `/watch/` and any request carrying a `Range` header, so media streams are never corrupted.
 - **Levelled logging**: `debug / info / warn / error`, including request duration and user agent, controlled by the `LOG_LEVEL` environment variable.
+- **Bilingual console**: the system language is detected at start-up (`LOCALSHARE_LANG` > `LC_ALL` / `LANG` > ICU locale); non-Chinese systems get English logs automatically, Chinese systems keep the original wording.
 
 ## 3. Tech Stack
 
@@ -147,6 +148,7 @@ LocalShare/
 │  ├─ shareFolders.ts         # Share folder resolution (CLI / env / dialog / default)
 │  ├─ folderPicker.ts         # Native "Select Folder" dialog via PowerShell
 │  ├─ logger.ts               # Levelled logging
+│  ├─ i18n.ts                 # Console language detection and zh/en messages
 │  └─ file.ts                 # File existence, video file enumeration
 ├─ views/
 │  ├─ baseTemplate.html       # Home / folder page template ({{videoItems}} placeholders)
@@ -218,6 +220,7 @@ LocalShare.exe
 | `SHARE_DIR` / `SHARE_DIRS` | Share folders, separated by `;` |
 | `NO_PICKER=1` | Skip the folder-picking dialog |
 | `LOG_LEVEL` | Log level: `debug` (default) / `info` / `warn` / `error` |
+| `LOCALSHARE_LANG` | Force the console language: `zh` / `en`; when unset it is auto-detected from the system language (alias: `LOCALSHARE_LANGUAGE`) |
 
 The default port and default share folders live in `config.ts`:
 
@@ -318,6 +321,17 @@ Newly added media is usually what you want to watch, so lists are sorted by `bir
 - a busy port triggers automatic retries on port + 1 (up to 10 times), avoiding clashes with an already running instance;
 - the startup banner is delayed by 300ms, working around Windows emitting `listening` before `error` (which would otherwise advertise a port that is not really in use);
 - when launched by double-click and exiting with an error, `pauseBeforeExit()` runs `pause` only if `stdin` is a TTY so the window does not vanish; scripts and pipes exit immediately and are never blocked.
+
+### 9.10 Automatic console language detection
+
+`utils/i18n.ts` performs a single language probe when the module is loaded, after which every log line is produced through `t("中文", "English")`:
+
+1. `LOCALSHARE_LANG` / `LOCALSHARE_LANGUAGE` (explicit override for demos and troubleshooting);
+2. `LC_ALL` / `LC_MESSAGES` / `LANG` / `LANGUAGE` (the usual source on Linux / macOS);
+3. `Intl.DateTimeFormat().resolvedOptions().locale` (on Windows this comes from the system regional settings);
+4. when nothing can be determined, Chinese is kept, matching the historical behaviour.
+
+Language tags are normalised to their primary subtag (`zh_CN.UTF-8` → `zh`, `en-US` → `en`), `POSIX` / `C` count as unspecified, and anything that is not `zh` falls back to English. The log-level labels switch as well (`[信息]` / `[INFO]`). Because both variants live at the call site there is no key/value table to maintain and no message can silently stay untranslated; a single line printed at start-up also reports the detected language.
 
 ## 10. Performance & Reliability
 

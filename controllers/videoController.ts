@@ -6,6 +6,7 @@ import { VIDEO_FOLDER, VIDEO_FOLDERS } from "../config";
 import { getMimeType, mime } from "../utils/mime";
 import { templateRenderer } from "../utils/template";
 import { logger } from "../utils/logger";
+import { t } from "../utils/i18n";
 
 /**
  * 视频控制器类
@@ -42,7 +43,12 @@ export class VideoController {
     this.videoFolders = videoFolders;
     this.videoFolder = videoFolders[0];
     logger.info(
-      `【setVideoFolders】 共享目录已更新: ${JSON.stringify(videoFolders)}`
+      t(
+        `【setVideoFolders】 共享目录已更新: ${JSON.stringify(videoFolders)}`,
+        `[setVideoFolders] shared folders updated: ${JSON.stringify(
+          videoFolders
+        )}`
+      )
     );
   }
 
@@ -212,16 +218,23 @@ export class VideoController {
    * @returns {Promise<void>}
    */
   public async getVideoList(_req: Request, res: Response): Promise<void> {
-    logger.debug("【getVideoList】 入口");
+    logger.debug(t("【getVideoList】 入口", "[getVideoList] enter"));
     const cacheKey = "__videoListCache";
     const cache: { ts: number; html: string } = (global as any)[cacheKey] || {
       ts: 0,
       html: "",
     };
     if (Date.now() - cache.ts < 5000 && cache.html) {
-      logger.info("【getVideoList】 缓存命中，直接返回 HTML");
+      logger.info(
+        t(
+          "【getVideoList】 缓存命中，直接返回 HTML",
+          "[getVideoList] cache hit, returning HTML directly"
+        )
+      );
       res.send(cache.html);
-      logger.debug("【getVideoList】 退出（缓存）");
+      logger.debug(
+        t("【getVideoList】 退出（缓存）", "[getVideoList] exit (cache)")
+      );
       return;
     }
 
@@ -247,7 +260,12 @@ export class VideoController {
         const folderItemsHtml = folderItemsArr.join("");
         const html = await templateRenderer.renderVideoListPage("", "根目录", folderItemsHtml, `<a href=\"/\" class=\"text-blue-600 hover:underline\">Home</a>`);
         res.send(html);
-        logger.debug("【getVideoList】 退出（多根首页）");
+        logger.debug(
+          t(
+            "【getVideoList】 退出（多根首页）",
+            "[getVideoList] exit (multi-root home page)"
+          )
+        );
         return;
       }
 
@@ -398,7 +416,12 @@ export class VideoController {
         this.videoFolder
       )}</span>`;
 
-      logger.debug("【getVideoList】 渲染模板 start");
+      logger.debug(
+        t(
+          "【getVideoList】 渲染模板 start",
+          "[getVideoList] rendering template: start"
+        )
+      );
       const html = await templateRenderer.renderVideoListPage(
         (global as any).__videoFilesFallback || videoFilesHtml,
         this.videoFolder,
@@ -408,11 +431,17 @@ export class VideoController {
       (global as any)[cacheKey] = { ts: Date.now(), html };
       res.send(html);
       logger.info(
-        `【getVideoList】 返回成功，视频项数 ${videoFilesHtml.length}`
+        t(
+          `【getVideoList】 返回成功，视频项数 ${videoFilesHtml.length}`,
+          `[getVideoList] returned successfully, items ${videoFilesHtml.length}`
+        )
       );
-      logger.debug("【getVideoList】 退出");
+      logger.debug(t("【getVideoList】 退出", "[getVideoList] exit"));
     } catch (err) {
-      logger.error("【getVideoList】 失败", err as unknown);
+      logger.error(
+        t("【getVideoList】 失败", "[getVideoList] failed"),
+        err as unknown
+      );
       res.status(500).send("无法读取视频目录");
     }
   }
@@ -425,22 +454,37 @@ export class VideoController {
    * @returns {Promise<void>}
    */
   public async streamVideo(req: Request, res: Response): Promise<void> {
-    logger.debug("【streamVideo】 入口");
+    logger.debug(t("【streamVideo】 入口", "[streamVideo] enter"));
     try {
       const rawFilename =
         (req.params as any).filename || (req.params as any)[0];
       const filename = decodeURIComponent(String(rawFilename || ""));
-      logger.info(`【streamVideo】 请求文件 ${filename}`);
+      logger.info(
+        t(
+          `【streamVideo】 请求文件 ${filename}`,
+          `[streamVideo] requesting file ${filename}`
+        )
+      );
       const resolved = await this.asyncResolveBaseAndRel(filename);
       if (!resolved) {
-        logger.warn(`【streamVideo】 未知根或路径: ${filename}`);
+        logger.warn(
+          t(
+            `【streamVideo】 未知根或路径: ${filename}`,
+            `[streamVideo] unknown root or path: ${filename}`
+          )
+        );
         res.status(404).send("视频文件未找到");
         return;
       }
       const videoPath = path.join(resolved.base, resolved.relPath);
 
       if (!VideoController.isPathSafe(resolved.base, videoPath)) {
-        logger.warn(`【streamVideo】 路径越界: ${videoPath}`);
+        logger.warn(
+          t(
+            `【streamVideo】 路径越界: ${videoPath}`,
+            `[streamVideo] path escapes the share root: ${videoPath}`
+          )
+        );
         res.status(403).send("禁止访问");
         return;
       }
@@ -448,7 +492,12 @@ export class VideoController {
       await fs.access(videoPath);
       const stat = await fs.stat(videoPath);
       const fileSize = stat.size;
-      logger.debug(`【streamVideo】 文件存在，大小 ${fileSize}`);
+      logger.debug(
+        t(
+          `【streamVideo】 文件存在，大小 ${fileSize}`,
+          `[streamVideo] file found, size ${fileSize}`
+        )
+      );
       const range = req.headers.range;
       const mimeType = getMimeType(filename);
       const etag = `W/"${stat.size}-${stat.mtimeMs}"`;
@@ -466,7 +515,10 @@ export class VideoController {
 
         if (ifNoneMatch === etag) {
           logger.info(
-            `【streamVideo】 条件命中 If-None-Match，返回 304 ${filename}`
+            t(
+              `【streamVideo】 条件命中 If-None-Match，返回 304 ${filename}`,
+              `[streamVideo] conditional hit If-None-Match, returning 304 ${filename}`
+            )
           );
           res.writeHead(304, {
             ETag: etag,
@@ -481,7 +533,10 @@ export class VideoController {
           const imsTime = new Date(ifModifiedSince).getTime();
           if (!isNaN(imsTime) && imsTime >= stat.mtime.getTime()) {
             logger.info(
-              `【streamVideo】 条件命中 If-Modified-Since，返回 304 ${filename}`
+              t(
+                `【streamVideo】 条件命中 If-Modified-Since，返回 304 ${filename}`,
+                `[streamVideo] conditional hit If-Modified-Since, returning 304 ${filename}`
+              )
             );
             res.writeHead(304, {
               ETag: etag,
@@ -501,7 +556,10 @@ export class VideoController {
         const chunkSize = end - start + 1;
 
         logger.info(
-          `【streamVideo】 Range 请求 start=${start} end=${end} chunk=${chunkSize}`
+          t(
+            `【streamVideo】 Range 请求 start=${start} end=${end} chunk=${chunkSize}`,
+            `[streamVideo] range request start=${start} end=${end} chunk=${chunkSize}`
+          )
         );
         const file = createReadStream(videoPath, { start, end });
         const contentDisposition = this.makeContentDisposition(
@@ -519,11 +577,27 @@ export class VideoController {
         } as Record<string, string | number>;
 
         res.writeHead(206, head as any);
-        file.once("open", () => logger.debug("【streamVideo】 分段流已打开"));
-        file.once("close", () => logger.debug("【streamVideo】 分段流已关闭"));
+        file.once("open", () =>
+          logger.debug(
+            t(
+              "【streamVideo】 分段流已打开",
+              "[streamVideo] range stream opened"
+            )
+          )
+        );
+        file.once("close", () =>
+          logger.debug(
+            t(
+              "【streamVideo】 分段流已关闭",
+              "[streamVideo] range stream closed"
+            )
+          )
+        );
         file.pipe(res);
       } else {
-        logger.info("【streamVideo】 完整流请求");
+        logger.info(
+          t("【streamVideo】 完整流请求", "[streamVideo] full stream request")
+        );
         const contentDisposition = this.makeContentDisposition(
           path.basename(videoPath)
         );
@@ -539,13 +613,27 @@ export class VideoController {
 
         res.writeHead(200, head as any);
         const full = createReadStream(videoPath);
-        full.once("open", () => logger.debug("【streamVideo】 完整流已打开"));
-        full.once("close", () => logger.debug("【streamVideo】 完整流已关闭"));
+        full.once("open", () =>
+          logger.debug(
+            t("【streamVideo】 完整流已打开", "[streamVideo] full stream opened")
+          )
+        );
+        full.once("close", () =>
+          logger.debug(
+            t(
+              "【streamVideo】 完整流已关闭",
+              "[streamVideo] full stream closed"
+            )
+          )
+        );
         full.pipe(res);
       }
-      logger.debug("【streamVideo】 退出");
+      logger.debug(t("【streamVideo】 退出", "[streamVideo] exit"));
     } catch (err) {
-      logger.error("【streamVideo】 失败", err as unknown);
+      logger.error(
+        t("【streamVideo】 失败", "[streamVideo] failed"),
+        err as unknown
+      );
       res.status(404).send("视频文件未找到");
     }
   }
@@ -555,21 +643,33 @@ export class VideoController {
    * 如果目标是目录或图片/音频，会重定向到对应的页面
    */
   public async watch(req: Request, res: Response): Promise<void> {
-    logger.debug("【watch】 入口");
+    logger.debug(t("【watch】 入口", "[watch] enter"));
     try {
       const rawFilename = (req.params as any).filename || (req.params as any)[0];
       const filename = decodeURIComponent(String(rawFilename || ""));
-      logger.info(`【watch】 请求文件 ${filename}`);
+      logger.info(
+        t(`【watch】 请求文件 ${filename}`, `[watch] requesting file ${filename}`)
+      );
       const resolved = await this.asyncResolveBaseAndRel(filename);
       if (!resolved) {
-        logger.warn(`【watch】 未知根或路径: ${filename}`);
+        logger.warn(
+          t(
+            `【watch】 未知根或路径: ${filename}`,
+            `[watch] unknown root or path: ${filename}`
+          )
+        );
         res.status(404).send("资源未找到");
         return;
       }
       const videoPath = path.join(resolved.base, resolved.relPath);
 
       if (!VideoController.isPathSafe(resolved.base, videoPath)) {
-        logger.warn(`【watch】 路径越界: ${videoPath}`);
+        logger.warn(
+          t(
+            `【watch】 路径越界: ${videoPath}`,
+            `[watch] path escapes the share root: ${videoPath}`
+          )
+        );
         res.status(403).send("禁止访问");
         return;
       }
@@ -594,9 +694,17 @@ export class VideoController {
       const title = path.basename(videoPath);
       const html = await templateRenderer.renderVideoPlayer(videoSrc, title);
       res.send(html);
-      logger.info(`【watch】 返回播放器页面 ${filename}`);
+      logger.info(
+        t(
+          `【watch】 返回播放器页面 ${filename}`,
+          `[watch] returning player page ${filename}`
+        )
+      );
     } catch (err) {
-      logger.error("【watch】 失败", err as unknown);
+      logger.error(
+        t("【watch】 失败", "[watch] failed"),
+        err as unknown
+      );
       res.status(404).send("资源未找到");
     }
   }
@@ -608,7 +716,7 @@ export class VideoController {
    * @returns {Promise<void>}
    */
   public async getFolderList(req: Request, res: Response): Promise<void> {
-    logger.debug("【getFolderList】 入口");
+    logger.debug(t("【getFolderList】 入口", "[getFolderList] enter"));
     try {
       const rawPath = (req.params as any).path || (req.params as any)[0] || "";
       const subPath = decodeURIComponent(String(rawPath || ""));
@@ -626,7 +734,10 @@ export class VideoController {
 
       const dirents = await fs.readdir(targetPath, { withFileTypes: true });
       logger.info(
-        `【getFolderList】 列出目录 ${targetPath}，项数 ${dirents.length}`
+        t(
+          `【getFolderList】 列出目录 ${targetPath}，项数 ${dirents.length}`,
+          `[getFolderList] listing ${targetPath}, entries ${dirents.length}`
+        )
       );
 
       const folderDirs = await this.sortDirentsByCreationDesc(
@@ -783,10 +894,18 @@ export class VideoController {
         breadcrumb
       );
       res.send(html);
-      logger.info(`【getFolderList】 返回成功，项数 ${videoFilesHtml.length}`);
-      logger.debug("【getFolderList】 退出");
+      logger.info(
+        t(
+          `【getFolderList】 返回成功，项数 ${videoFilesHtml.length}`,
+          `[getFolderList] returned successfully, items ${videoFilesHtml.length}`
+        )
+      );
+      logger.debug(t("【getFolderList】 退出", "[getFolderList] exit"));
     } catch (err) {
-      logger.error("【getFolderList】 失败", err as unknown);
+      logger.error(
+        t("【getFolderList】 失败", "[getFolderList] failed"),
+        err as unknown
+      );
       res.status(500).send("无法读取目录");
     }
   }
@@ -798,7 +917,7 @@ export class VideoController {
    * @returns {Promise<void>}
    */
   public async comicViewer(req: Request, res: Response): Promise<void> {
-    logger.debug("【comicViewer】 入口");
+    logger.debug(t("【comicViewer】 入口", "[comicViewer] enter"));
     try {
       const rawPath = (req.params as any).path || (req.params as any)[0] || "";
       const subPath = decodeURIComponent(String(rawPath || ""));
@@ -884,9 +1003,17 @@ export class VideoController {
         startIndex
       );
       res.send(html);
-      logger.info(`【comicViewer】 返回漫画页面，图片数 ${images.length}`);
+      logger.info(
+        t(
+          `【comicViewer】 返回漫画页面，图片数 ${images.length}`,
+          `[comicViewer] returning comic page, images ${images.length}`
+        )
+      );
     } catch (err) {
-      logger.error("【comicViewer】 失败", err as unknown);
+      logger.error(
+        t("【comicViewer】 失败", "[comicViewer] failed"),
+        err as unknown
+      );
       res.status(404).send("漫画资源未找到");
     }
   }
@@ -898,7 +1025,7 @@ export class VideoController {
    * @returns {Promise<void>}
    */
   public async audioPlayer(req: Request, res: Response): Promise<void> {
-    logger.debug("【audioPlayer】 入口");
+    logger.debug(t("【audioPlayer】 入口", "[audioPlayer] enter"));
     try {
       const rawPath = (req.params as any).path || (req.params as any)[0] || "";
       const subPath = decodeURIComponent(String(rawPath || ""));
@@ -989,9 +1116,17 @@ export class VideoController {
         startIndex
       );
       res.send(html);
-      logger.info(`【audioPlayer】 返回音频页面，音频数 ${audios.length}`);
+      logger.info(
+        t(
+          `【audioPlayer】 返回音频页面，音频数 ${audios.length}`,
+          `[audioPlayer] returning audio page, tracks ${audios.length}`
+        )
+      );
     } catch (err) {
-      logger.error("【audioPlayer】 失败", err as unknown);
+      logger.error(
+        t("【audioPlayer】 失败", "[audioPlayer] failed"),
+        err as unknown
+      );
       res.status(404).send("音频资源未找到");
     }
   }

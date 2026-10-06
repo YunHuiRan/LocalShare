@@ -9,11 +9,23 @@ import { videoController } from "./controllers/videoController";
 import { PORT, VIDEO_FOLDERS } from "./config";
 import { logger } from "./utils/logger";
 import { resolveSharedFolders } from "./utils/shareFolders";
+import { language, t } from "./utils/i18n";
 
 /**
  * 设置控制台窗口标题，方便双击运行 exe 时识别
  */
-process.title = "LocalShare 文件共享服务";
+process.title = t("LocalShare 文件共享服务", "LocalShare File Sharing Service");
+
+/**
+ * 打印本次检测到的控制台语言，便于排查输出为何是中文/英文
+ * （可用环境变量 LOCALSHARE_LANG=zh|en 强制指定）
+ */
+logger.debug(
+  t(
+    `【语言】 系统语言检测结果: 中文（${language}）`,
+    `【i18n】 console language: English (${language})`
+  )
+);
 
 /**
  * 获取本机所有局域网 IPv4 地址
@@ -57,9 +69,14 @@ function pauseBeforeExit(): void {
 const resolvedFolders: string[] | null = resolveSharedFolders();
 
 if (resolvedFolders === null) {
-  logger.info("未选择共享文件夹，程序退出。");
   logger.info(
-    '提示: 可把要共享的文件夹直接拖到 LocalShare.exe 图标上，或执行 LocalShare.exe "D:\\要共享的目录"'
+    t("未选择共享文件夹，程序退出。", "No shared folder selected, exiting.")
+  );
+  logger.info(
+    t(
+      '提示: 可把要共享的文件夹直接拖到 LocalShare.exe 图标上，或执行 LocalShare.exe "D:\\要共享的目录"',
+      'Tip: drag the folder you want to share onto LocalShare.exe, or run LocalShare.exe "D:\\folder\\to\\share"'
+    )
   );
   pauseBeforeExit();
   process.exit(0);
@@ -82,7 +99,13 @@ for (const folder of SHARED_FOLDERS) {
       fs.mkdirSync(folder, { recursive: true });
     }
   } catch (e) {
-    logger.error(`创建共享目录失败: ${folder}`, e as any);
+    logger.error(
+      t(
+        `创建共享目录失败: ${folder}`,
+        `Failed to create shared folder: ${folder}`
+      ),
+      e as any
+    );
   }
 }
 
@@ -124,19 +147,28 @@ app.use(cors());
  */
 app.use((req, res, next) => {
   const start: number = Date.now();
-  logger.debug(`【请求】 开始 ${req.method} ${req.originalUrl}`);
+  logger.debug(
+    t(
+      `【请求】 开始 ${req.method} ${req.originalUrl}`,
+      `[request] start ${req.method} ${req.originalUrl}`
+    )
+  );
   const ua = req.headers["user-agent"] || "-";
   res.once("finish", () => {
     const duration: number = Date.now() - start;
+    const uaText =
+      typeof ua === "string" ? ua.replace(/\n/g, "") : JSON.stringify(ua);
     logger.info(
-      `【请求】 ${req.method} ${req.originalUrl} ${
-        res.statusCode
-      } ${duration}ms - UA: ${
-        typeof ua === "string" ? ua.replace(/\n/g, "") : JSON.stringify(ua)
-      }`
+      t(
+        `【请求】 ${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms - UA: ${uaText}`,
+        `[request] ${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms - UA: ${uaText}`
+      )
     );
     logger.debug(
-      `【请求】 结束 ${req.method} ${req.originalUrl} 耗时 ${duration}ms`
+      t(
+        `【请求】 结束 ${req.method} ${req.originalUrl} 耗时 ${duration}ms`,
+        `[request] end ${req.method} ${req.originalUrl} after ${duration}ms`
+      )
     );
   });
   next();
@@ -165,7 +197,12 @@ const STARTUP_BANNER_DELAY_MS = 300;
  * @returns {import("http").Server} HTTP 服务器实例
  */
 function tryListen(port: number, attemptsLeft = 3) {
-  logger.info(`尝试监听端口 ${port}（剩余尝试 ${attemptsLeft}）`);
+  logger.info(
+    t(
+      `尝试监听端口 ${port}（剩余尝试 ${attemptsLeft}）`,
+      `Trying port ${port} (${attemptsLeft} attempts left)`
+    )
+  );
   const startAttempt = Date.now();
   /** 本次监听是否已失败（用于避免端口被占用时打印出错误的地址） */
   let failed = false;
@@ -176,19 +213,52 @@ function tryListen(port: number, attemptsLeft = 3) {
       const took = Date.now() - startAttempt;
       const lanAddresses = getLanIPv4Addresses();
       logger.info("======================================================");
-      logger.info(`LocalShare 已启动（耗时 ${took}ms）`);
-      logger.info(`共享目录: ${SHARED_FOLDERS.join("  |  ")}`);
-      logger.info(`本机访问: http://localhost:${port}`);
+      logger.info(
+        t(
+          `LocalShare 已启动（耗时 ${took}ms）`,
+          `LocalShare started in ${took}ms`
+        )
+      );
+      logger.info(
+        t(
+          `共享目录: ${SHARED_FOLDERS.join("  |  ")}`,
+          `Shared folders: ${SHARED_FOLDERS.join("  |  ")}`
+        )
+      );
+      logger.info(
+        t(
+          `本机访问: http://localhost:${port}`,
+          `Local access: http://localhost:${port}`
+        )
+      );
       for (const ip of lanAddresses) {
-        logger.info(`局域网访问（手机/平板用这个）: http://${ip}:${port}`);
+        logger.info(
+          t(
+            `局域网访问（手机/平板用这个）: http://${ip}:${port}`,
+            `LAN access (use this on your phone/tablet): http://${ip}:${port}`
+          )
+        );
       }
       if (lanAddresses.length === 0) {
-        logger.warn("未检测到局域网 IPv4 地址，请确认网络连接是否正常");
+        logger.warn(
+          t(
+            "未检测到局域网 IPv4 地址，请确认网络连接是否正常",
+            "No LAN IPv4 address detected, please check your network connection"
+          )
+        );
       }
-      logger.info("提示: 手机需与电脑连接同一个 Wi-Fi/局域网才能访问");
+      logger.info(
+        t(
+          "提示: 手机需与电脑连接同一个 Wi-Fi/局域网才能访问",
+          "Tip: your phone must be on the same Wi-Fi/LAN as this computer"
+        )
+      );
       logger.info("======================================================");
       logger.info(
-        `节点版本: ${process.version}，进程 PID: ${String(process.pid)}`
+        t(
+          `节点版本: ${process.version}，进程 PID: ${String(process.pid)}`,
+          `Node version: ${process.version}, PID: ${String(process.pid)}`
+        )
       );
     }, STARTUP_BANNER_DELAY_MS);
   });
@@ -201,7 +271,12 @@ function tryListen(port: number, attemptsLeft = 3) {
     ]);
     if (err && err.code === "EADDRINUSE" && attemptsLeft > 0) {
       const nextPort = port + 1;
-      logger.warn(`端口 ${port} 被占用，尝试下一端口 ${nextPort}`);
+      logger.warn(
+        t(
+          `端口 ${port} 被占用，尝试下一端口 ${nextPort}`,
+          `Port ${port} is in use, trying the next port ${nextPort}`
+        )
+      );
       setTimeout(() => tryListen(nextPort, attemptsLeft - 1), 200);
     }
   });
